@@ -1,0 +1,26 @@
+/* [project]/node_modules/.pnpm/geist@1.7.2_next@16.3.4_@types+node@22.19.19_react-dom@19.2.8_react@19.2.8__react@19.2.8_/node_modules/geist/dist/geistsans_d5a4f12f.module.css [app-client] (css) */
+@font-face {
+  font-family: GeistSans;
+  src: url("../media/Geist_Variable-s.p.0mrjj4bg00-he.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 100 900;
+}
+
+@font-face {
+  font-family: GeistSans Fallback;
+  src: local(Arial);
+  ascent-override: 94.56%;
+  descent-override: 27.76%;
+  line-gap-override: 0.0%;
+  size-adjust: 106.28%;
+}
+
+.geistsans_d5a4f12f-module__2RKj5a__className {
+  font-family: GeistSans, GeistSans Fallback;
+}
+
+.geistsans_d5a4f12f-module__2RKj5a__variable {
+  --font-geist-sans: "GeistSans", "GeistSans Fallback";
+}
+
+/*# sourceMappingURL=10uk_geist_dist_geistsans_d5a4f12f_module_css_1igg3k2._.single.css.map*/

@@ -1,0 +1,23 @@
+{
+  "app": {
+    "[project]/apps/web/app/page": [
+      "static/media/GeistMono_Variable.p.3ms9vq719j3f8.woff2",
+      "static/media/Geist_Variable-s.p.0mrjj4bg00-he.woff2"
+    ],
+    "[project]/apps/web/app/recovery/ledger/page": [
+      "static/media/GeistMono_Variable.p.3ms9vq719j3f8.woff2",
+      "static/media/Geist_Variable-s.p.0mrjj4bg00-he.woff2"
+    ],
+    "[project]/apps/web/app/recovery/map/page": [
+      "static/media/GeistMono_Variable.p.3ms9vq719j3f8.woff2",
+      "static/media/Geist_Variable-s.p.0mrjj4bg00-he.woff2"
+    ],
+    "[project]/apps/web/app/recovery/queue/page": [
+      "static/media/GeistMono_Variable.p.3ms9vq719j3f8.woff2",
+      "static/media/Geist_Variable-s.p.0mrjj4bg00-he.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

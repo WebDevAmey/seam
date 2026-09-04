@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/*
+ * Seam's design language: a ledger, because the subject is one — a paper
+ * surface, hairline rules as the only structural device, rupee figures as
+ * the visual hero at a scale nothing else on the page competes with.
+ * Geist Mono carries every figure, hash and evidence id (tabular-nums,
+ * character-level distinction is functional there); Geist Sans carries
+ * everything else. Both are Vercel's own open fonts — not borrowed from
+ * anyone's brand.
+ */
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-accent: var(--accent);
+  --color-at-risk: var(--at-risk);
+  --color-recovered: var(--recovered);
+}
+
+:root {
+  --paper: #faf9f6;
+  --surface: #ffffff;
+  --ink: #15171c;
+  --muted: #6e7278;
+  --rule: #e3e2dd;
+  /* copper — thread pulled through a seam, warm without leaning on the
+     cliché cream+terracotta pairing (the paper here is closer to bone than
+     cream, and the accent sits toward copper rather than orange). */
+  --accent: #a15c2e;
+  --at-risk: #b3261e;
+  --recovered: #1b6e3c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #131313;
+    --surface: #1a1a1a;
+    --ink: #f0efe9;
+    --muted: #9a9a94;
+    --rule: #2e2d29;
+    --accent: #d68a52;
+    --at-risk: #e5837a;
+    --recovered: #4fbf7e;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #131313;
+  --surface: #1a1a1a;
+  --ink: #f0efe9;
+  --muted: #9a9a94;
+  --rule: #2e2d29;
+  --accent: #d68a52;
+  --at-risk: #e5837a;
+  --recovered: #4fbf7e;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-mono-figures {
+  font-family: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}

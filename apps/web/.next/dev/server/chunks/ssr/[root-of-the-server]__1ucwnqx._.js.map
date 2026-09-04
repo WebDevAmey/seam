@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 10, "column": 0}, "map": {"version":3,"sources":["file:///Users/ameynitintarmale/Desktop/SEAM/apps/web/app/recovery/map/page.tsx"],"sourcesContent":["export default function LeakMapPage() {\n  return (\n    <div className=\"px-6 py-10 sm:px-10\">\n      <p className=\"text-muted text-[13px]\">Leak map — under construction</p>\n    </div>\n  );\n}\n"],"names":["LeakMapPage","className"],"mappings":";;;;;;AAAe,SAASA;IACtB,qBACE,iZAAC;QAAIC,WAAU;kBACb,cAAA,iZAAC;YAAEA,WAAU;sBAAyB;;;;;;;;;;;AAG5C"}}]
+}

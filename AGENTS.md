@@ -32,6 +32,7 @@ PRD.md         private planning doc — gitignored, never committed, never refer
 - `pnpm --filter @seam/api test` — vitest, all tests must pass before calling a change done
 - `pnpm --filter @seam/api typecheck` — must be clean before calling a change done
 - `pnpm --filter @seam/api db:push` — pushes `prisma/schema.prisma` **and regenerates the client** (chained on purpose — see `LEARNINGS.md`)
+- **Run `npx prisma generate` (from `apps/api`) after any root-level `pnpm install`**, not just after touching `schema.prisma` — adding or changing a *sibling* workspace package's dependencies can shift where pnpm resolves the generated Prisma client to, silently orphaning the old one. Symptom: every DB-touching test fails with `Cannot find module '.prisma/client/default'`. Seen three times now for three different triggers — see `LEARNINGS.md`.
 - `psql "$DATABASE_URL" -f apps/api/prisma/manual-constraints.sql` — **run this once after every fresh `db:push` against a new database** (a teammate's machine, Neon, Render). It adds constraints Prisma 7 can't express natively (currently: `Leak.evidenceEventIds` can never be empty). Safe to re-run.
 
 Local dev needs Postgres running and a `DATABASE_URL` + `DATASOURCE_ENC_KEY` in `apps/api/.env` (see `.env.example`).
