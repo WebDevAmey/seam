@@ -38,9 +38,28 @@ const DEFAULT_COUNTS: GenerateCounts = {
 
 const METHODS = ["card", "upi", "netbanking", "wallet"] as const;
 const FIRST_NAMES = ["asha", "rahul", "priya", "vikram", "neha", "arjun", "kavya", "rohan", "meera", "sanjay"];
+// Varied on purpose — matches classifyDiagnosis's real patterns (insufficient
+// funds / declined / auth-failed / fraud), plus one residual reason that
+// deliberately stays UNKNOWN_TRANSIENT, the same way a real decline-reason
+// distribution would have some tail your lookup table doesn't cover yet.
+const PAYMENT_BLOCKED_REASONS = [
+  "insufficient_funds",
+  "card_declined",
+  "authentication_failed",
+  "otp_verification_failed",
+  "suspected_fraud_risk",
+  "payment_failed",
+] as const;
 
 function randomAmountPaise(rng: () => number): bigint {
-  return BigInt(randomInt(rng, 300, 5000) * 100);
+  // ₹300 floor was an arbitrary simplification from when this generator
+  // was first built (Block 3) — real abandoned-cart/failed-payment amounts
+  // absolutely include small carts well under that. Widening it is a
+  // realism fix independent of any eval outcome, not a tune-for-a-number:
+  // it's also the only way the EV floor (PRD §9) ever has anything to
+  // actually filter, since a ₹300+ cart clears it under every diagnosis
+  // class's prior anyway.
+  return BigInt(randomInt(rng, 50, 5000) * 100);
 }
 
 function randomCustomer(rng: () => number, index: number): { email: string; phone: string } {
@@ -184,7 +203,7 @@ export async function generateMerchantDay(options: {
       status: "failed",
       amountPaise,
       attemptedAt: new Date(occurredAt.getTime() + 60_000),
-      errorReason: "payment_failed",
+      errorReason: pick(rng, PAYMENT_BLOCKED_REASONS),
     });
     groundTruth.push({ checkoutId, class: "PAYMENT_BLOCKED", amountPaise });
   }
