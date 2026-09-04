@@ -168,6 +168,7 @@ model RecoveryAction {
   shieldReason   String?
   rzpRef         String?
   dispatchedAt   DateTime?
+  createdAt      DateTime  @default(now())
 
   // Deliberately NOT @@unique — Prisma can't express the actual invariant
   // (status-scoped, matching the AnalystJob-style pattern in PRD §9): only

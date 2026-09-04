@@ -1,5 +1,4 @@
 {
-  "/page": "app/page.js",
   "/recovery/ledger/page": "app/recovery/ledger/page.js",
   "/recovery/map/page": "app/recovery/map/page.js",
   "/recovery/queue/page": "app/recovery/queue/page.js"

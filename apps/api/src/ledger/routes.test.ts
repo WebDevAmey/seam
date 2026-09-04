@@ -4,6 +4,27 @@ import { prisma } from "../prisma.js";
 import { appendLedgerEntry } from "./append.js";
 import { ledgerRoutes } from "./routes.js";
 
+describe("GET /ledger", () => {
+  it("filters by merchantId and returns bigint seq as a string", async () => {
+    const merchant = await prisma.merchant.create({
+      data: { name: "Ledger List Test", email: `${randomUUID()}@example.com` },
+    });
+    const other = await prisma.merchant.create({
+      data: { name: "Ledger List Other", email: `${randomUUID()}@example.com` },
+    });
+    await appendLedgerEntry({ merchantId: other.id, payload: { marker: "other" } });
+    const mine = await appendLedgerEntry({ merchantId: merchant.id, payload: { marker: "mine" } });
+
+    const res = await ledgerRoutes.request(`/ledger?merchantId=${merchant.id}`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { seq: string; merchantId: string }[];
+
+    expect(body).toHaveLength(1);
+    expect(body[0]?.seq).toBe(mine.seq.toString());
+    expect(body[0]?.merchantId).toBe(merchant.id);
+  });
+});
+
 describe("GET /ledger/verify", () => {
   it("returns 200 { valid: true } for a healthy chain", async () => {
     const merchant = await prisma.merchant.create({

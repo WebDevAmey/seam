@@ -1,4 +1,16 @@
 {
-  "node": {},
+  "node": {
+    "0034091f7702cc8eee67c2dcb3be43ae1867339043": {
+      "workers": {
+        "app/recovery/ledger/page": {
+          "moduleId": "[project]/apps/web/.next-internal/server/app/recovery/ledger/page/actions.js { ACTIONS_MODULE0 => \"[project]/apps/web/app/recovery/ledger/verify-action.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "codeHash": null
+        }
+      },
+      "exportedName": "verifyLedgerAction",
+      "filename": "apps/web/app/recovery/ledger/verify-action.ts"
+    }
+  },
   "edge": {}
 }

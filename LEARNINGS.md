@@ -74,6 +74,17 @@ Shopify apps get a real OAuth redirect flow; Razorpay does not offer the equival
 **Fix:** added `attemptedAt` to `PaymentAttempt`, populated from the real payment's own timestamp during resolve (not `now()` at insert time — a delayed sweep shouldn't shift when the panel thinks the failure occurred).
 **Learning:** the second schema gap caught this way (after `RawEvent.processedAt`). Both were found by trying to actually implement or test the behavior the field was needed for, not by re-reading the spec harder — worth remembering as the detectors and eval harness get built next.
 
+### Bug — `.env.local` wasn't actually gitignored, despite looking like it should be
+**What broke:** nothing yet — caught before it mattered. The root `.gitignore` had `.env` and `.env.*.local`, which reads like it should cover `.env.local`, but doesn't: `.env.*.local` requires *something* between `.env.` and `.local`, and `.env.local` has nothing there.
+**Fix:** added `.env.local` as its own explicit line.
+**Learning:** verified with `git check-ignore -v` rather than trusting the pattern by eye — it genuinely returned "not ignored" before the fix and "ignored" after. A plausible-looking glob pattern is still worth checking mechanically before relying on it to keep a secret out of git.
+
+### Decision — server-to-server fetches only, so the frontend never needs CORS
+Every real data fetch in `apps/web` runs in a Server Component or a Server Action — `lib/api.ts` is explicit that it's never meant to run in the browser. The one interactive piece (the ledger's "Verify chain" button) calls a Server Action, not `apps/api` directly, specifically so the browser never makes a cross-origin request to `localhost:8090` that `apps/api` doesn't set up CORS headers for. This was a deliberate choice, not an oversight discovered later — cheaper to decide once than to add CORS middleware and then have two ways to reach the same data.
+
+### Decision — one hardcoded demo merchant, no login UI, matching the open question this was flagged as
+Every screen renders `SEAM_DEMO_MERCHANT_ID` from the environment. This was flagged as an open question in the PRD (how much auth does the demo actually need) and resolved here in the simplest direction available: real session auth is real hours this build doesn't need to spend, and a hackathon demo showing one merchant's real data is a stronger showing than a login screen guarding an empty one.
+
 ### Bug — a third way to end up with a stale Prisma client, and a new trigger this time
 **What broke:** every `apps/api` test file touching the database failed with `Cannot find module '.prisma/client/default'` immediately after scaffolding `apps/web` and running `pnpm install` at the workspace root — nothing about `apps/api`'s own schema or code had changed.
 **Why:** Prisma's generated client lives inside a pnpm virtual-store path keyed by the resolved dependency graph (`node_modules/.pnpm/@prisma+client@.../node_modules/@prisma/client`). Adding a second workspace package with its own `@types/react`/`@types/react-dom` versions shifted that resolved graph enough to change the path, leaving the previously generated client orphaned at the old one.

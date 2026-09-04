@@ -1,8 +1,10 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { recoveryActionRoutes } from "./execute/routes.js";
 import { internalRoutes } from "./internal/routes.js";
 import { razorpayWebhookRoutes } from "./ingest/webhooks.razorpay.js";
 import { shopifyWebhookRoutes } from "./ingest/webhooks.shopify.js";
+import { leakRoutes } from "./leaks/routes.js";
 import { ledgerRoutes } from "./ledger/routes.js";
 import { merchantRoutes } from "./merchants/routes.js";
 
@@ -14,6 +16,8 @@ app.route("/", razorpayWebhookRoutes);
 app.route("/", shopifyWebhookRoutes);
 app.route("/", internalRoutes);
 app.route("/", ledgerRoutes);
+app.route("/", leakRoutes);
+app.route("/", recoveryActionRoutes);
 
 const port = Number(process.env.PORT ?? 8080);
 
