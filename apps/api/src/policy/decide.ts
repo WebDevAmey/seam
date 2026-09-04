@@ -37,6 +37,7 @@ const P_RECOVER: Record<DiagnosisClass, number> = {
   AUTH_FAILED: 0.2,
   SUSPECTED_FRAUD: 0,
   UNKNOWN_TRANSIENT: 0,
+  PROMPT_INJECTION_SUSPECTED: 0,
 };
 
 /** Diagnosis → action. A fixed table, never a model decision (PRD §9). */
@@ -47,7 +48,17 @@ const ACTION_TABLE: Record<DiagnosisClass, ActionClass | null> = {
   AUTH_FAILED: "SAME_METHOD_LINK",
   SUSPECTED_FRAUD: "HOLD_AND_ESCALATE",
   UNKNOWN_TRANSIENT: null,
+  PROMPT_INJECTION_SUSPECTED: "HOLD_AND_ESCALATE",
 };
+
+/** Diagnoses that are escalations, not recovery spends — EV math doesn't
+ * apply, and neither ever auto-contacts a customer. Suspected fraud and a
+ * suspected prompt injection get the identical, maximally-cautious
+ * response: a human looks at it, nothing is sent automatically. */
+const ESCALATE_NEVER_CONTACT: ReadonlySet<DiagnosisClass> = new Set([
+  "SUSPECTED_FRAUD",
+  "PROMPT_INJECTION_SUSPECTED",
+]);
 
 const CHANNEL_COST_PAISE: Record<Channel, bigint> = {
   whatsapp: 50n,
@@ -72,9 +83,7 @@ function scheduleFor(diagnosisClass: DiagnosisClass, input: PolicyInput): Date |
 }
 
 export function decide(input: PolicyInput): PolicyDecision {
-  // Escalation, not a recovery spend — EV math doesn't apply, and it never
-  // auto-contacts the customer regardless of amount.
-  if (input.diagnosisClass === "SUSPECTED_FRAUD") {
+  if (ESCALATE_NEVER_CONTACT.has(input.diagnosisClass)) {
     return { kind: "action", action: { actionClass: "HOLD_AND_ESCALATE", evPaise: 0n } };
   }
 

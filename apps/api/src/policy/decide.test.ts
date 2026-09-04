@@ -20,6 +20,13 @@ describe("decide — diagnosis to action is a fixed table, never a model decisio
     expect(result).toEqual({ kind: "action", action: { actionClass: "HOLD_AND_ESCALATE", evPaise: 0n } });
   });
 
+  it("PROMPT_INJECTION_SUSPECTED gets the identical treatment to SUSPECTED_FRAUD — always escalate, never contact", () => {
+    const result = decide(
+      baseInput({ diagnosisClass: "PROMPT_INJECTION_SUSPECTED", leakAmountPaise: 1n }),
+    );
+    expect(result).toEqual({ kind: "action", action: { actionClass: "HOLD_AND_ESCALATE", evPaise: 0n } });
+  });
+
   it("UNKNOWN_TRANSIENT is always NO_ACTION — no table entry, no guessing", () => {
     const result = decide(baseInput({ diagnosisClass: "UNKNOWN_TRANSIENT" }));
     expect(result.kind).toBe("no_action");

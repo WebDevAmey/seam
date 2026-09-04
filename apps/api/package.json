@@ -12,7 +12,9 @@
     "db:push": "prisma db push && prisma generate"
   },
   "dependencies": {
+    "@ai-sdk/openai": "4.0.58",
     "@hono/node-server": "1.19.14",
+    "ai": "7.0.92",
     "@langchain/core": "1.2.9",
     "@langchain/langgraph": "1.4.13",
     "@langchain/langgraph-checkpoint-postgres": "1.0.5",

@@ -4,7 +4,13 @@ export type DiagnosisClass =
   | "INSUFFICIENT_FUNDS"
   | "AUTH_FAILED"
   | "SUSPECTED_FRAUD"
-  | "UNKNOWN_TRANSIENT";
+  | "UNKNOWN_TRANSIENT"
+  // Only the LLM path (Block 7) can produce this one — the deterministic
+  // classifier below never does. PRD §8 names it lowercase
+  // ("prompt_injection_suspected"); this codebase's convention is
+  // SCREAMING_SNAKE_CASE for every other diagnosis class, so it's spelled
+  // that way here for consistency, same meaning either way.
+  | "PROMPT_INJECTION_SUSPECTED";
 
 export type DiagnosisInput = {
   leakClass: string;
