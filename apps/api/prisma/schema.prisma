@@ -161,7 +161,7 @@ model RecoveryAction {
   checkoutId     String
   leakId         String
   actionClass    String
-  state          String
+  state          String // 'RESERVED' | 'DISPATCHED' | 'FAILED'
   idempotencyKey String
   evPaise        BigInt
   shieldVerdict  String
@@ -169,7 +169,12 @@ model RecoveryAction {
   rzpRef         String?
   dispatchedAt   DateTime?
 
-  @@unique([merchantId, checkoutId, actionClass])
+  // Deliberately NOT @@unique — Prisma can't express the actual invariant
+  // (status-scoped, matching the AnalystJob-style pattern in PRD §9): only
+  // one RESERVED-or-DISPATCHED row per (merchant, checkout, class) at a
+  // time, but a FAILED row shouldn't block a fresh retry. The real
+  // constraint is a partial unique index in manual-constraints.sql.
+  @@index([merchantId, checkoutId, actionClass])
 }
 
 model LedgerEntry {

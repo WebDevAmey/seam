@@ -16,3 +16,11 @@ BEGIN
       ADD CONSTRAINT leak_has_evidence CHECK (cardinality("evidenceEventIds") > 0);
   END IF;
 END $$;
+
+-- The actual idempotency lock (PRD §9, §13 invariant 1): at most one
+-- RESERVED-or-DISPATCHED RecoveryAction per (merchant, checkout, class) at
+-- a time. A FAILED row doesn't count against this — it must not block a
+-- legitimate retry, which is exactly why this can't be a flat @@unique.
+CREATE UNIQUE INDEX IF NOT EXISTS recovery_action_active_reservation
+  ON "RecoveryAction" ("merchantId", "checkoutId", "actionClass")
+  WHERE state IN ('RESERVED', 'DISPATCHED');
