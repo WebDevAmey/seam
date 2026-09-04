@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ConnectionStatus {
+  PENDING
+  CONNECTED
+  ERROR
+  DISCONNECTED
+}
+
+// One Ovrt merchant = one connected Shopify store + one connected Razorpay
+// account. Deliberately minimal — no auth/org/RBAC beyond what a 30-hour
+// demo needs; see DECISIONS.md.
+model Merchant {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  shopify  ShopifyConnection?
+  razorpay RazorpayConnection?
+}
+
+model ShopifyConnection {
+  id          String           @id @default(cuid())
+  merchantId  String           @unique
+  merchant    Merchant         @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  shopDomain  String           @unique
+  accessToken String // AES-256-GCM encrypted, format v1:<iv>:<tag>:<data>
+  scope       String
+  currency    String           @default("INR")
+  status      ConnectionStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model RazorpayConnection {
+  id            String           @id @default(cuid())
+  merchantId    String           @unique
+  merchant      Merchant         @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  keyId         String
+  keySecret     String // AES-256-GCM encrypted
+  webhookSecret String // AES-256-GCM encrypted
+  accountId     String?
+  currency      String           @default("INR")
+  status        ConnectionStatus @default(PENDING)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+// ── append-only ingest — the source of truth (PRD §6, §13 invariant 2) ──
+
+model RawEvent {
+  id                String    @id @default(cuid())
+  merchantId        String
+  source            String // 'shopify' | 'razorpay'
+  eventType         String
+  externalId        String
+  payload           Json
+  receivedAt        DateTime  @default(now())
+  signatureVerified Boolean
+  // nullable "claimed" marker — what SELECT ... FOR UPDATE SKIP LOCKED
+  // filters on. Not in the PRD's original sketch; without it, concurrent
+  // workers have no way to know which rows are already spoken for.
+  processedAt       DateTime?
+
+  @@unique([source, externalId]) // dedup at the door
+  @@index([merchantId, receivedAt])
+  @@index([processedAt])
+}
+
+model FunnelEvent {
+  id          String   @id @default(cuid())
+  merchantId  String
+  checkoutId  String
+  customerRef String
+  stage       String // session|product_view|add_to_cart|checkout_start|payment_attempt|payment_success|fulfilled
+  occurredAt  DateTime
+  amountPaise BigInt
+  rawEventId  String
+
+  @@index([merchantId, checkoutId])
+}
+
+model PaymentAttempt {
+  id               String   @id @default(cuid())
+  merchantId       String
+  rzpPaymentId     String   @unique
+  rzpOrderId       String
+  checkoutId       String?
+  joinConfidence   Decimal?
+  joinMethod       String // 'notes' | 'fuzzy' | 'none'
+  method           String
+  status           String
+  amountPaise      BigInt
+  errorCode        String?
+  errorDescription String?
+  errorSource      String?
+  errorStep        String?
+  errorReason      String?
+
+  @@index([merchantId, checkoutId])
+}
+
+model DowntimeWindow {
+  id         String    @id @default(cuid())
+  method     String
+  issuer     String
+  severity   String
+  startedAt  DateTime
+  resolvedAt DateTime?
+}
+
+// no evidence, no leak — CHECK (cardinality(evidenceEventIds) > 0) added via
+// a raw migration; Prisma doesn't express CHECK constraints natively.
+model Leak {
+  id               String   @id @default(cuid())
+  merchantId       String
+  class            String // see PRD §5 — the six leak classes
+  amountPaise      BigInt
+  checkoutId       String?
+  evidenceEventIds String[]
+  confidence       Decimal
+  detectedAt       DateTime @default(now())
+
+  @@index([merchantId, class, detectedAt])
+}
+
+model Diagnosis {
+  id               String   @id @default(cuid())
+  leakId           String
+  diagnosisClass   String
+  confidence       Decimal
+  source           String // 'rules' | 'llm'
+  modelName        String?
+  evidenceEventIds String[]
+  latencyMs        Int
+}
+
+// status-scoped idempotency lock — the reservation IS the concurrency
+// control (PRD §9 invariant 1), not app-level discipline.
+model RecoveryAction {
+  id             String    @id @default(cuid())
+  merchantId     String
+  checkoutId     String
+  leakId         String
+  actionClass    String
+  state          String
+  idempotencyKey String
+  evPaise        BigInt
+  shieldVerdict  String
+  shieldReason   String?
+  rzpRef         String?
+  dispatchedAt   DateTime?
+
+  @@unique([merchantId, checkoutId, actionClass])
+}
+
+model LedgerEntry {
+  seq        BigInt   @id @default(autoincrement())
+  merchantId String
+  prevHash   String
+  payload    Json
+  hash       String   @unique
+  createdAt  DateTime @default(now())
+}
+
+model Outcome {
+  id                String   @id @default(cuid())
+  actionId          String
+  recoveredPaise    BigInt
+  attributedAt      DateTime
+  attributionMethod String
+}

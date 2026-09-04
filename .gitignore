@@ -1,0 +1,11 @@
+node_modules/
+.env
+.env.*.local
+dist/
+.turbo/
+*.log
+.DS_Store
+
+# internal planning doc — cites a private, unrelated system's architecture
+# for research purposes; never part of the public submission
+PRD.md
