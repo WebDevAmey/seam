@@ -83,6 +83,11 @@ Shopify apps get a real OAuth redirect flow; Razorpay does not offer the equival
 ### Decision — a CHECK constraint as a second line of defense, not a replacement for the tested one
 `classifyCheckout` is already proven to never return a leak with empty evidence, and `detect-for-merchant.test.ts` proves it again through the full write path. A `CHECK (cardinality(evidenceEventIds) > 0)` constraint on the `Leak` table on top of that isn't redundant — it protects against a *different* future bug (some other write path to the same table that doesn't go through this code). Prisma 7 can't express CHECK constraints in `schema.prisma`, so it lives in `prisma/manual-constraints.sql` and has to be applied by hand once per fresh database — documented in `AGENTS.md` so it isn't just tribal knowledge.
 
+### Learning — proving "fails closed" took a deliberate choice of API, not just a try/catch
+**What:** Shield's content check originally used `/pattern/.test(text)`, which coerces its argument to a string — so a `null` message would silently become the string `"null"`, match nothing, and pass every check instead of throwing. That would have made the "fails closed" test pass for the wrong reason (nothing ever actually failed).
+**Fix:** switched to `text.match(pattern)`, which throws a real `TypeError` on `null`/`undefined` — so the fail-closed wrapper's `catch` block is genuinely exercised, not just present in the code.
+**Learning:** "fails closed" is a claim about what happens when something throws — proving it means finding an input that *actually* throws, not just wrapping code in try/catch and trusting it. `.test()` vs `.match()` was the difference between a real proof and a test that would pass even if the catch block were deleted.
+
 ### Decision — the generator covers four of six leak classes, on purpose
 `PAYMENT_BLOCKED`, `ISSUER_DOWNTIME`, `SILENT_ABANDON`, and `PRE_CHECKOUT_DROP` are all expressible with today's schema and are built and tested. `METHOD_CONCENTRATION` needs a 14-day baseline (one merchant-day of data can't establish a baseline to deviate from) and `POST_PURCHASE_LEAK` needs a refund/return model that doesn't exist yet — building either now would mean guessing at a shape before the detector that consumes it exists. Deferred deliberately, not forgotten.
 
