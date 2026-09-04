@@ -1,0 +1,26 @@
+import { prisma } from "../prisma.js";
+import { computeEntryHash, GENESIS_HASH } from "./hash-chain.js";
+
+export type VerifyResult = { valid: true } | { valid: false; brokenAtSeq: bigint; reason: string };
+
+/** Recomputes the entire chain from genesis — the actual "verify" button
+ * behind screen 3. Every entry's prevHash must match the entry before it,
+ * and every entry's hash must be exactly what its own prevHash+payload
+ * recompute to. */
+export async function verifyLedgerChain(): Promise<VerifyResult> {
+  const entries = await prisma.ledgerEntry.findMany({ orderBy: { seq: "asc" } });
+
+  let expectedPrevHash = GENESIS_HASH;
+  for (const entry of entries) {
+    if (entry.prevHash !== expectedPrevHash) {
+      return { valid: false, brokenAtSeq: entry.seq, reason: "prevHash doesn't match the prior entry's hash" };
+    }
+    const recomputed = computeEntryHash(entry.prevHash, entry.payload);
+    if (recomputed !== entry.hash) {
+      return { valid: false, brokenAtSeq: entry.seq, reason: "stored hash doesn't match the recomputed one" };
+    }
+    expectedPrevHash = entry.hash;
+  }
+
+  return { valid: true };
+}

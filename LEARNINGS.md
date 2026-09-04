@@ -83,6 +83,17 @@ Shopify apps get a real OAuth redirect flow; Razorpay does not offer the equival
 ### Decision — a CHECK constraint as a second line of defense, not a replacement for the tested one
 `classifyCheckout` is already proven to never return a leak with empty evidence, and `detect-for-merchant.test.ts` proves it again through the full write path. A `CHECK (cardinality(evidenceEventIds) > 0)` constraint on the `Leak` table on top of that isn't redundant — it protects against a *different* future bug (some other write path to the same table that doesn't go through this code). Prisma 7 can't express CHECK constraints in `schema.prisma`, so it lives in `prisma/manual-constraints.sql` and has to be applied by hand once per fresh database — documented in `AGENTS.md` so it isn't just tribal knowledge.
 
+### Decision — the ledger is one global chain, locked with a Postgres advisory lock
+**What:** the hash chain isn't per-merchant — every merchant's entries interleave in one linear sequence, and screen 3's "filter by merchant" is a display concern, not a chain-structure one.
+**Why it needs a lock at all:** two concurrent appends both reading "the last entry" under Postgres's default isolation can both build on the same `prevHash`, forking the chain — a `SELECT ... FOR UPDATE` on the last row doesn't help either, because there's nothing to lock yet before the very first entry exists.
+**Fix:** `pg_advisory_xact_lock` on a fixed key, held for the transaction's duration — serializes every append, including the genesis case. Proven with a real test: 10 concurrent `appendLedgerEntry` calls, then `verifyLedgerChain()` confirms one straight, unbroken line, not a fork.
+
+### Bug — a tampered-chain response that would have crashed on the exact request that needed it most
+**What broke:** `GET /ledger/verify` on a genuinely broken chain threw `TypeError: Do not know how to serialize a BigInt` instead of returning the 409 it was supposed to.
+**Why:** `brokenAtSeq` is a Postgres `bigserial`, which Prisma maps to a JS `bigint` — and `JSON.stringify` (which Hono's `c.json()` uses) throws on a bare `bigint` rather than silently stringifying it.
+**Fix:** convert `brokenAtSeq` to a string before it crosses the JSON boundary, same as every other bigint field already leaving this API.
+**Learning:** confirmed this was a real bug, not defensive coding for something that couldn't happen — reverted the fix, watched the exact predicted crash happen, then restored it. The failure mode is exactly the demo-day nightmare: the one code path that only runs when something's actually wrong (a tampered chain) is also the one path least likely to get exercised by casual manual testing.
+
 ### Learning — proving "fails closed" took a deliberate choice of API, not just a try/catch
 **What:** Shield's content check originally used `/pattern/.test(text)`, which coerces its argument to a string — so a `null` message would silently become the string `"null"`, match nothing, and pass every check instead of throwing. That would have made the "fails closed" test pass for the wrong reason (nothing ever actually failed).
 **Fix:** switched to `text.match(pattern)`, which throws a real `TypeError` on `null`/`undefined` — so the fail-closed wrapper's `catch` block is genuinely exercised, not just present in the code.
