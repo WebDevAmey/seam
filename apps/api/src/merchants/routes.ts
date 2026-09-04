@@ -4,6 +4,15 @@ import { requireEnv } from "../env.js";
 import { encrypt } from "../lib/crypto.js";
 import { prisma } from "../prisma.js";
 import { verifyRazorpayCredentials } from "./razorpay-client.js";
+import {
+  buildInstallUrl,
+  createState,
+  decodeState,
+  exchangeCodeForAccessToken,
+  verifyShopifyCallbackHmac,
+} from "./shopify-oauth.js";
+
+const SHOPIFY_SCOPE = "read_orders,read_checkouts,read_customers";
 
 const createMerchantSchema = z.object({
   name: z.string().min(1),
@@ -47,6 +56,55 @@ merchantRoutes.post("/merchants/:id/razorpay/connect", async (c) => {
     where: { merchantId },
     create: { merchantId, ...encrypted },
     update: encrypted,
+  });
+
+  return c.json({ status: "CONNECTED" });
+});
+
+merchantRoutes.get("/merchants/:id/shopify/install", (c) => {
+  const merchantId = c.req.param("id");
+  const shop = c.req.query("shop");
+  if (!shop) {
+    return c.json({ error: "shop query param is required" }, 400);
+  }
+
+  const url = buildInstallUrl({
+    shop,
+    state: createState(merchantId),
+    clientId: requireEnv("SHOPIFY_CLIENT_ID"),
+    redirectUri: requireEnv("SHOPIFY_REDIRECT_URI"),
+    scope: SHOPIFY_SCOPE,
+  });
+
+  return c.redirect(url);
+});
+
+merchantRoutes.get("/shopify/callback", async (c) => {
+  const query = c.req.query();
+  const clientSecret = requireEnv("SHOPIFY_CLIENT_SECRET");
+
+  if (!verifyShopifyCallbackHmac(query, clientSecret)) {
+    return c.json({ error: "invalid hmac" }, 400);
+  }
+
+  const { code, shop, state } = query;
+  if (!code || !shop || !state) {
+    return c.json({ error: "missing code, shop, or state" }, 400);
+  }
+
+  const { merchantId } = decodeState(state);
+  const { accessToken, scope } = await exchangeCodeForAccessToken(
+    shop,
+    code,
+    requireEnv("SHOPIFY_CLIENT_ID"),
+    clientSecret,
+  );
+
+  const encryptedToken = encrypt(accessToken, requireEnv("DATASOURCE_ENC_KEY"));
+  await prisma.shopifyConnection.upsert({
+    where: { merchantId },
+    create: { merchantId, shopDomain: shop, accessToken: encryptedToken, scope, status: "CONNECTED" },
+    update: { shopDomain: shop, accessToken: encryptedToken, scope, status: "CONNECTED" },
   });
 
   return c.json({ status: "CONNECTED" });

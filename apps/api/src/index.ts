@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { razorpayWebhookRoutes } from "./ingest/webhooks.razorpay.js";
+import { shopifyWebhookRoutes } from "./ingest/webhooks.shopify.js";
 import { merchantRoutes } from "./merchants/routes.js";
 
 const app = new Hono();
@@ -8,6 +9,7 @@ const app = new Hono();
 app.get("/health", (c) => c.json({ ok: true }));
 app.route("/", merchantRoutes);
 app.route("/", razorpayWebhookRoutes);
+app.route("/", shopifyWebhookRoutes);
 
 const port = Number(process.env.PORT ?? 8080);
 
