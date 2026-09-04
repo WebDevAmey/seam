@@ -58,6 +58,11 @@ Shopify apps get a real OAuth redirect flow; Razorpay does not offer the equival
 **Fix:** generate a fresh random id per test run instead of a fixed literal, matching the pattern the Razorpay webhook tests already used.
 **Learning:** a fixed literal in a test is only safe if the database gets reset between runs. Ours doesn't (real Postgres, not a fresh sandbox per test), so every test that writes rows needs to generate its own unique inputs — and "passes in isolation" is not the same guarantee as "passes as part of the suite."
 
+### Bug — a flaky test caused by a *correct* design decision
+**What broke:** the queue-claim concurrency test (6 workers racing over 12 rows) started intermittently claiming only 2 of its 12 rows once a second test file (`/internal/sweep`) also started claiming from the same table.
+**Why:** `claimUnprocessedRawEvents` claims globally across every merchant — correct for production, since a sweep has to drain *all* pending work, not just one merchant's. But vitest runs test files in parallel by default, so two files both pulling from the same real, shared queue table started competing for each other's rows.
+**Fix:** turned off file-level parallelism in `vitest.config.ts` rather than artificially scoping the claim query to make tests convenient — the query being global is correct; the tests running concurrently against a shared real table was the actual problem. Confirmed with three back-to-back full-suite runs, not one lucky pass.
+
 ### Decision — the join scorer is a pure function, deliberately decoupled from the database
 **What:** `resolveJoin(payment, candidates)` takes plain objects in, returns a plain result out — no Prisma import, no I/O.
 **Why:** this is the actual differentiator (most competing approaches never join the two data sources at all), so it needs to be provably correct on its own, independent of how candidates get fetched. All 9 tests run in milliseconds with no database.

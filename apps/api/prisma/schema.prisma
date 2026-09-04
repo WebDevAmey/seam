@@ -79,10 +79,17 @@ model FunnelEvent {
   merchantId  String
   checkoutId  String
   customerRef String
+  // Raw contact info, not just customerRef — the join scorer matches on
+  // these directly, and recovery outreach needs a real phone/email to send
+  // to, not a hash. Nullable: only checkout_start rows populate them today.
+  customerEmail String?
+  customerPhone String?
   stage       String // session|product_view|add_to_cart|checkout_start|payment_attempt|payment_success|fulfilled
   occurredAt  DateTime
   amountPaise BigInt
-  rawEventId  String
+  // unique so resolving the same RawEvent twice is a safe no-op, not a
+  // duplicate row — needed for resolveShopifyEvent's upsert to work at all.
+  rawEventId  String @unique
 
   @@index([merchantId, checkoutId])
 }
