@@ -58,5 +58,10 @@ Shopify apps get a real OAuth redirect flow; Razorpay does not offer the equival
 **Fix:** generate a fresh random id per test run instead of a fixed literal, matching the pattern the Razorpay webhook tests already used.
 **Learning:** a fixed literal in a test is only safe if the database gets reset between runs. Ours doesn't (real Postgres, not a fresh sandbox per test), so every test that writes rows needs to generate its own unique inputs — and "passes in isolation" is not the same guarantee as "passes as part of the suite."
 
+### Decision — the join scorer is a pure function, deliberately decoupled from the database
+**What:** `resolveJoin(payment, candidates)` takes plain objects in, returns a plain result out — no Prisma import, no I/O.
+**Why:** this is the actual differentiator (most competing approaches never join the two data sources at all), so it needs to be provably correct on its own, independent of how candidates get fetched. All 9 tests run in milliseconds with no database.
+**Learning:** floating-point addition needed a rounding guard (`0.40 + 0.35` can print as `0.7499999999999999` in JS) — rounding to 2 decimal places after summing avoids a boundary case (exactly 0.75) silently landing on the wrong side of the accept/ambiguous line.
+
 ### Naming — renamed twice before settling
 The project went through two names before landing on **Seam**, which is also the central metaphor: two systems (storefront, payment gateway) that don't share a customer identity have a seam between them, and that seam is exactly where revenue goes missing unaccounted for. Renaming a running codebase is mechanical but easy to do sloppily — a global find-and-replace on macOS's `sed` missed one lowercase instance because BSD `sed`'s word-boundary matching isn't identical to GNU `sed`'s. Caught by grepping for the old name again after the rename, not by trusting the first pass.
