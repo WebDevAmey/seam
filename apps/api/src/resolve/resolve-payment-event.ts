@@ -45,6 +45,7 @@ export async function resolvePaymentEvent(event: ClaimedRawEvent): Promise<void>
     method: entity.method ?? "unknown",
     status: entity.status ?? "unknown",
     amountPaise: BigInt(entity.amount),
+    attemptedAt: forJoin?.attemptedAt ?? new Date(),
     errorCode: entity.error_code ?? null,
     errorDescription: entity.error_description ?? null,
     errorSource: entity.error_source ?? null,

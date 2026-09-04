@@ -105,6 +105,10 @@ model PaymentAttempt {
   method           String
   status           String
   amountPaise      BigInt
+  // when the attempt actually happened — not in the PRD's original sketch,
+  // but ISSUER_DOWNTIME detection (§5) is impossible without it: there's no
+  // way to check "did this failure happen during a downtime window" blind.
+  attemptedAt      DateTime @default(now())
   errorCode        String?
   errorDescription String?
   errorSource      String?

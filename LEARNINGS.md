@@ -68,5 +68,14 @@ Shopify apps get a real OAuth redirect flow; Razorpay does not offer the equival
 **Why:** this is the actual differentiator (most competing approaches never join the two data sources at all), so it needs to be provably correct on its own, independent of how candidates get fetched. All 9 tests run in milliseconds with no database.
 **Learning:** floating-point addition needed a rounding guard (`0.40 + 0.35` can print as `0.7499999999999999` in JS) — rounding to 2 decimal places after summing avoids a boundary case (exactly 0.75) silently landing on the wrong side of the accept/ambiguous line.
 
+### Bug — a schema gap that made a whole leak class undetectable
+**What broke:** nothing crashed, but while writing the generator's test for `ISSUER_DOWNTIME` (a payment failure that overlaps an issuer/network outage), there was no field anywhere recording *when* a payment attempt actually happened.
+**Why:** `PaymentAttempt` had every field from the PRD's original sketch except a timestamp — an oversight that's easy to miss until you try to answer "did this failure happen during the outage," which is the entire definition of that leak class.
+**Fix:** added `attemptedAt` to `PaymentAttempt`, populated from the real payment's own timestamp during resolve (not `now()` at insert time — a delayed sweep shouldn't shift when the panel thinks the failure occurred).
+**Learning:** the second schema gap caught this way (after `RawEvent.processedAt`). Both were found by trying to actually implement or test the behavior the field was needed for, not by re-reading the spec harder — worth remembering as the detectors and eval harness get built next.
+
+### Decision — the generator covers four of six leak classes, on purpose
+`PAYMENT_BLOCKED`, `ISSUER_DOWNTIME`, `SILENT_ABANDON`, and `PRE_CHECKOUT_DROP` are all expressible with today's schema and are built and tested. `METHOD_CONCENTRATION` needs a 14-day baseline (one merchant-day of data can't establish a baseline to deviate from) and `POST_PURCHASE_LEAK` needs a refund/return model that doesn't exist yet — building either now would mean guessing at a shape before the detector that consumes it exists. Deferred deliberately, not forgotten.
+
 ### Naming — renamed twice before settling
 The project went through two names before landing on **Seam**, which is also the central metaphor: two systems (storefront, payment gateway) that don't share a customer identity have a seam between them, and that seam is exactly where revenue goes missing unaccounted for. Renaming a running codebase is mechanical but easy to do sloppily — a global find-and-replace on macOS's `sed` missed one lowercase instance because BSD `sed`'s word-boundary matching isn't identical to GNU `sed`'s. Caught by grepping for the old name again after the rename, not by trusting the first pass.
