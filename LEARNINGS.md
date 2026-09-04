@@ -74,6 +74,15 @@ Shopify apps get a real OAuth redirect flow; Razorpay does not offer the equival
 **Fix:** added `attemptedAt` to `PaymentAttempt`, populated from the real payment's own timestamp during resolve (not `now()` at insert time — a delayed sweep shouldn't shift when the panel thinks the failure occurred).
 **Learning:** the second schema gap caught this way (after `RawEvent.processedAt`). Both were found by trying to actually implement or test the behavior the field was needed for, not by re-reading the spec harder — worth remembering as the detectors and eval harness get built next.
 
+### Bug — the detector was right, the ground truth was wrong
+**What broke:** a checkout the generator labelled `PAYMENT_BLOCKED` in its ground truth got classified by the detector as `ISSUER_DOWNTIME` instead — looked at first like a detector bug.
+**Why:** the generator picks a random payment method and a random time-of-day independently for every checkout, including `PAYMENT_BLOCKED` ones. By chance, one landed on the same method and time window as the synthetic downtime outage — which, by the actual rule ("`ISSUER_DOWNTIME` is a `PAYMENT_BLOCKED` that overlaps an active downtime window"), *is* an issuer-downtime case. The detector was correct; the generator's label was the bug.
+**Fix:** `PAYMENT_BLOCKED` and clean checkouts now pick their payment method from the set that excludes the downtime window's method, so the two scenarios can never accidentally collide.
+**Learning:** when a test fails, check which side is actually wrong before "fixing" the code that produced the surprising answer — the detector's own unit tests (written first, independent of the generator) already proved its downtime-overlap logic was correct in isolation, which is what made it obvious the generator was the thing to fix, not the detector.
+
+### Decision — a CHECK constraint as a second line of defense, not a replacement for the tested one
+`classifyCheckout` is already proven to never return a leak with empty evidence, and `detect-for-merchant.test.ts` proves it again through the full write path. A `CHECK (cardinality(evidenceEventIds) > 0)` constraint on the `Leak` table on top of that isn't redundant — it protects against a *different* future bug (some other write path to the same table that doesn't go through this code). Prisma 7 can't express CHECK constraints in `schema.prisma`, so it lives in `prisma/manual-constraints.sql` and has to be applied by hand once per fresh database — documented in `AGENTS.md` so it isn't just tribal knowledge.
+
 ### Decision — the generator covers four of six leak classes, on purpose
 `PAYMENT_BLOCKED`, `ISSUER_DOWNTIME`, `SILENT_ABANDON`, and `PRE_CHECKOUT_DROP` are all expressible with today's schema and are built and tested. `METHOD_CONCENTRATION` needs a 14-day baseline (one merchant-day of data can't establish a baseline to deviate from) and `POST_PURCHASE_LEAK` needs a refund/return model that doesn't exist yet — building either now would mean guessing at a shape before the detector that consumes it exists. Deferred deliberately, not forgotten.
 

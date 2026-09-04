@@ -133,6 +133,12 @@ export async function generateMerchantDay(options: {
     downtimeWindow = { startedAt, resolvedAt, method };
   }
 
+  // PAYMENT_BLOCKED must never accidentally satisfy ISSUER_DOWNTIME too —
+  // if it used the downtime window's own method during its own window, the
+  // detector (correctly) reclassifies it, and the ground-truth label would
+  // be wrong. Steer clear of that method entirely for these two loops.
+  const safeMethods = downtimeWindow ? METHODS.filter((m) => m !== downtimeWindow!.method) : METHODS;
+
   for (let i = 0; i < counts.clean; i++, index++) {
     const checkoutId = `checkout_clean_${options.seed}_${index}`;
     const { email, phone } = randomCustomer(rng, index);
@@ -150,7 +156,7 @@ export async function generateMerchantDay(options: {
     await createPaymentAttempt({
       merchantId: options.merchantId,
       checkoutId,
-      method: pick(rng, METHODS),
+      method: pick(rng, safeMethods),
       status: "captured",
       amountPaise,
       attemptedAt: new Date(occurredAt.getTime() + 60_000),
@@ -174,7 +180,7 @@ export async function generateMerchantDay(options: {
     await createPaymentAttempt({
       merchantId: options.merchantId,
       checkoutId,
-      method: pick(rng, METHODS),
+      method: pick(rng, safeMethods),
       status: "failed",
       amountPaise,
       attemptedAt: new Date(occurredAt.getTime() + 60_000),

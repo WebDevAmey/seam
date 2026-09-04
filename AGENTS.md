@@ -32,6 +32,7 @@ PRD.md         private planning doc — gitignored, never committed, never refer
 - `pnpm --filter @seam/api test` — vitest, all tests must pass before calling a change done
 - `pnpm --filter @seam/api typecheck` — must be clean before calling a change done
 - `pnpm --filter @seam/api db:push` — pushes `prisma/schema.prisma` **and regenerates the client** (chained on purpose — see `LEARNINGS.md`)
+- `psql "$DATABASE_URL" -f apps/api/prisma/manual-constraints.sql` — **run this once after every fresh `db:push` against a new database** (a teammate's machine, Neon, Render). It adds constraints Prisma 7 can't express natively (currently: `Leak.evidenceEventIds` can never be empty). Safe to re-run.
 
 Local dev needs Postgres running and a `DATABASE_URL` + `DATASOURCE_ENC_KEY` in `apps/api/.env` (see `.env.example`).
 
