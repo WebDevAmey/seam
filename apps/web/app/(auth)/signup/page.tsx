@@ -1,0 +1,83 @@
+"use client";
+
+import Link from "next/link";
+import { useActionState } from "react";
+import { signup } from "@/lib/actions/auth";
+
+export default function SignupPage() {
+  const [state, formAction, pending] = useActionState(signup, undefined);
+
+  return (
+    <form action={formAction} className="space-y-5">
+      <div>
+        <h1 className="font-heading text-[20px] font-semibold text-[#f0f0f0]">Create an account</h1>
+        <p className="mt-1 text-[13px] text-[#8a8a8a]">Your account is active right away, no email verification needed.</p>
+      </div>
+
+      {state?.error && (
+        <p className="rounded-lg border border-[#ef4444]/25 bg-[#ef4444]/5 px-3 py-2 text-[13px] text-[#ef4444]">
+          {state.error}
+        </p>
+      )}
+
+      <div className="space-y-1.5">
+        <label htmlFor="name" className="text-[13px] font-medium text-[#8a8a8a]">
+          Name
+        </label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          autoComplete="name"
+          className="w-full rounded-lg border border-white/[0.06] bg-[#050505] px-3 py-2.5 text-[14px] text-[#f0f0f0] outline-none focus:border-[#3b82f6] focus:ring-4 focus:ring-[#3b82f6]/10"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="email" className="text-[13px] font-medium text-[#8a8a8a]">
+          Email
+        </label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autoComplete="email"
+          className="w-full rounded-lg border border-white/[0.06] bg-[#050505] px-3 py-2.5 text-[14px] text-[#f0f0f0] outline-none focus:border-[#3b82f6] focus:ring-4 focus:ring-[#3b82f6]/10"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="password" className="text-[13px] font-medium text-[#8a8a8a]">
+          Password
+        </label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          minLength={8}
+          autoComplete="new-password"
+          className="w-full rounded-lg border border-white/[0.06] bg-[#050505] px-3 py-2.5 text-[14px] text-[#f0f0f0] outline-none focus:border-[#3b82f6] focus:ring-4 focus:ring-[#3b82f6]/10"
+        />
+        <p className="text-[12px] text-[#5a5a5a]">At least 8 characters.</p>
+      </div>
+
+      <button
+        type="submit"
+        disabled={pending}
+        className="w-full rounded-lg bg-[#3b82f6] px-4 py-2.5 text-[14px] font-medium text-white transition-colors hover:bg-[#60a5fa] disabled:opacity-50"
+      >
+        {pending ? "Creating account…" : "Create account"}
+      </button>
+
+      <p className="text-[13px] text-[#8a8a8a]">
+        Already have one?{" "}
+        <Link href="/login" className="font-medium text-[#3b82f6] hover:text-[#60a5fa]">
+          Sign in
+        </Link>
+      </p>
+    </form>
+  );
+}

@@ -1,43 +1,12 @@
-"use client";
+import { Sidebar } from "@/components/sidebar";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+type Merchant = { id: string; name: string; email: string } | null;
 
-const NAV_ITEMS = [
-  { href: "/recovery/map", label: "Leak map" },
-  { href: "/recovery/queue", label: "Recovery queue" },
-  { href: "/recovery/ledger", label: "Ledger" },
-] as const;
-
-export function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
+export function AppShell({ children, merchant }: { children: React.ReactNode; merchant: Merchant }) {
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-rule">
-        <div className="flex items-center justify-between px-6 py-4 sm:px-10">
-          <Link href="/recovery/map" className="text-[15px] font-semibold tracking-tight">
-            Seam
-          </Link>
-          <nav className="flex gap-1">
-            {NAV_ITEMS.map((item) => {
-              const active = pathname?.startsWith(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`rounded-md px-3 py-1.5 text-[13px] transition-colors ${
-                    active ? "bg-ink text-paper" : "text-muted hover:text-ink"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </header>
-      <main>{children}</main>
+    <div className="flex min-h-screen bg-[#050505]">
+      <Sidebar merchant={merchant} />
+      <main className="min-w-0 flex-1">{children}</main>
     </div>
   );
 }
