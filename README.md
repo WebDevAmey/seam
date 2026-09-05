@@ -76,12 +76,23 @@ Track 03 scores money recovered from payment failures. Seam recovers those too, 
 
 Full design rationale: [`ARCHITECTURE.md`](./ARCHITECTURE.md). Every non-obvious choice and what it beat: [`DECISIONS.md`](./DECISIONS.md).
 
+## Beyond the core loop
+
+Real login (JWT-in-httpOnly-cookie, adapted from a generic auth pattern — see `DECISIONS.md`), and three features built on top of the pipeline above, each grounded in Seam's own data rather than requiring credentials this build doesn't have:
+
+- **Leak intelligence** (`apps/api/src/intelligence/`, `/recovery/intelligence`) — a daily z-score comparison of each payment method's failure rate against its own 7-day baseline; a method that spikes more than 2σ above normal gets flagged as a `METHOD_CONCENTRATION` leak, often the first sign of an issuer- or gateway-side problem.
+- **Recovery conversations** (`apps/api/src/replies/`, `/recovery/tickets`) — inbound replies to a recovery message get classified (promise to pay / already paid / refuse / opt-out / unclear); refuse/unclear/opt-out open a ticket for a human, and an opt-out is written to a real `OptOut` table that Shield checks before every future contact attempt.
+- **Weekly digest** (`apps/api/src/digest/`, `/recovery/digest`) — a templated founder brief built fresh from a merchant's own leak and recovery history for any period, explicit about which figures are predicted EV versus realised.
+- **Analytics dashboard** (`apps/api/src/analytics/`, `/recovery`) — daily leaked-vs-recovered trend, leak-value-by-cause, and payment-method-reliability charts (Recharts), all real aggregations over a merchant's own rows, no display-layer estimates.
+- **Agent fleet** (`apps/api/src/agents/`, `/recovery/agents`) — a named, honest inventory of Seam's automated workers (detector, diagnosis, policy, shield, executor, leak intelligence, reply classifier, digest, chat — seven deterministic, two LLM-assisted), each backed by a real harness (`agents/harness.ts`) that records every run's actual input/output — click into any agent to see its real run history, not a simulated activity count, plus a real success-rate bar. Detector, diagnosis, the recovery executor, Shield, and the Opportunities Agent are all live-triggerable from their own pages, and a single **"Run all agents"** button sweeps them in dependency order. The **Recovery Executor** runs the real Policy + Shield decision path over every unaddressed leak and reserves (or blocks) a real recovery action for each one; it stops short of actually dispatching, because that needs a merchant's connected Razorpay credentials, which nothing in this build has (see `LIMITATIONS.md` §10, §13).
+- **Chat with your store** (`apps/api/src/agents/chat/`, `/recovery/chat`) — a conversational agent (OpenRouter via the Vercel AI SDK's tool-calling, `OPENROUTER_API_KEY` required — see `src/llm/providers.ts`) that answers questions about a merchant's own leaks, opportunities, open conversations, and ledger integrity by calling the same real, tested functions every other agent uses — never authors a number itself, and has no write/dispatch tool available to it (`LIMITATIONS.md` §12). UI built on real [beUI](https://beui.dev) components (`message`, `prompt-input`, `tool-result`, `thinking-shimmer`) pulled via the shadcn registry.
+
 ## What's real vs. simulated
 
 - Razorpay: real test-mode API calls (key verification, payment link creation) — no live money anywhere.
 - Shopify: real OAuth flow, real webhook HMAC verification.
-- WhatsApp and SMS: simulated, behind an interface shaped so a real adapter is a one-file swap. Said plainly, not implied otherwise.
-- The LLM diagnosis path: fully built and tested against a mocked model — there's no live API key configured for this project, so it's never been exercised against a real model. Disclosed in [`LIMITATIONS.md`](./LIMITATIONS.md), not hidden.
+- WhatsApp and SMS: simulated, both outbound (behind an interface shaped so a real adapter is a one-file swap) and inbound (a reply endpoint stands in for a real webhook) — everything downstream of "here is the reply text," including classification, ticketing, and opt-out, is real.
+- The LLM diagnosis path: built and tested against a mocked model, *and* run live against a real Groq model (`classify-with-openai.live.test.ts`) — all 7 prompt-injection fixtures plus a plain decline correctly classified. A real, specific result on this build's own fixture set, not a general claim about detection quality at scale. Full detail in [`LIMITATIONS.md`](./LIMITATIONS.md) §4.
 
 ## Measured results
 
@@ -104,32 +115,31 @@ pnpm install
 # create a local database, then:
 cp apps/api/.env.example apps/api/.env
 # fill in DATABASE_URL, DATASOURCE_ENC_KEY (any random string for local dev)
+# optional: set GROQ_API_KEY to run diagnosis against a real model, and/or
+# OPENROUTER_API_KEY to make the chat agent (/recovery/chat) actually respond
+# — everything else in this build runs with no key at all
 
 cd apps/api
 pnpm db:push
 psql "$DATABASE_URL" -f prisma/manual-constraints.sql
-pnpm test          # 169 tests, all against a real Postgres instance
+pnpm test          # 305 tests (9 auto-skip without GROQ_API_KEY / OPENROUTER_API_KEY), all against a real Postgres instance
+pnpm exec tsx --env-file=.env scripts/seed-demo.ts   # seeds a real demo account, prints its login
 pnpm dev           # http://localhost:8090
 
 # in a second terminal
 cd apps/web
 cp .env.example .env.local
-# SEAM_API_URL=http://localhost:8090, SEAM_DEMO_MERCHANT_ID=<seed one first>
+# SEAM_API_URL=http://localhost:8090
+# JWT_SECRET must be the exact same value as apps/api/.env's JWT_SECRET
 pnpm install
 pnpm dev           # http://localhost:3000
 ```
 
-To see real (synthetic, not fabricated) data on the three screens:
-
-```bash
-cd apps/api
-pnpm exec tsx --env-file=.env scripts/seed-demo.ts
-# copy the printed merchant id into apps/web/.env.local as SEAM_DEMO_MERCHANT_ID
-```
+Sign in at `http://localhost:3000/login` with the email/password the seed script printed (`founder@kolamandco.example` / `seamdemo123` by default) to see real generated data — or use `/signup` to create a fresh, empty account.
 
 ## What's new vs. what's a deliberate scope cut
 
-This is a standalone build, written from scratch — see [`LEARNINGS.md`](./LEARNINGS.md) for the full account, including the two things deliberately deferred (`METHOD_CONCENTRATION` and `POST_PURCHASE_LEAK` leak classes — no 14-day baseline data and no refund model exist yet, respectively) and every real bug hit and fixed along the way.
+The application — every backend pipeline stage, the agent fleet, the auth, the dashboard — is a standalone build, written from scratch for this buildathon. The one exception, on explicit instruction: the marketing landing page's structure, motion, and component architecture is adapted from [Ovrt](https://github.com/WebDevAmey/Ovrt) (`ovrt.in`), the same team's other project — copy rewritten for Seam, the accent recolored to supermemory.ai's blue, real product screenshots replaced with illustrative mockups of Seam's own concepts. See `DECISIONS.md` and `LEARNINGS.md` for the full account, including the one thing still deliberately deferred in the actual product (`POST_PURCHASE_LEAK` — no refund/return data model exists yet) and every real bug hit and fixed along the way.
 
 ## Repo map
 
@@ -144,4 +154,10 @@ This is a standalone build, written from scratch — see [`LEARNINGS.md`](./LEAR
 | `LIMITATIONS.md` | every disclosed gap, quantified |
 | `AGENTS.md` | rules for any AI agent working in this repo |
 | `apps/api` | Hono + TypeScript + Prisma 7 + Postgres backend |
+| `apps/api/src/intelligence` | leak intelligence — z-score method-concentration detection |
+| `apps/api/src/digest` | weekly digest — the founder brief |
+| `apps/api/src/replies` | reply classification, tickets, opt-out |
+| `apps/api/src/auth` | signup/login (JWT issuing, real DB access), and the `requireOwnMerchant`/`requireSession` middleware every merchant-scoped route sits behind |
+| `apps/api/src/analytics` | real daily/by-class/by-method aggregations powering the dashboard's charts |
+| `apps/api/src/agents` | the named agent registry and the Opportunities Agent's live dry-run decisions |
 | `apps/web` | Next.js frontend |

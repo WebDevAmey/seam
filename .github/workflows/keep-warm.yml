@@ -1,0 +1,38 @@
+name: Keep-warm sweep
+
+# Render's free Web Service sleeps after 15 minutes idle (PRD §3.3) — this
+# pings the real sweep endpoint, not a dummy health check, every ~10 minutes
+# so the service (and Neon's compute, which idles independently on its own
+# 5-minute timer) never goes fully cold during a judging window. Requires
+# two repo secrets, set once: SEAM_API_URL (the deployed apps/api base URL,
+# no trailing slash) and SWEEP_SECRET (must match apps/api's own env var).
+#
+# Disclosed limitation, not hidden: GitHub Actions schedules are best-effort
+# — they can slip by several minutes under load, and GitHub may silently
+# throttle scheduled runs on a repo with no other recent activity. If this
+# gap ever exceeds ~15 minutes, the next real request eats a cold start.
+# See LIMITATIONS.md.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /internal/sweep
+        run: |
+          if [ -z "${{ secrets.SEAM_API_URL }}" ] || [ -z "${{ secrets.SWEEP_SECRET }}" ]; then
+            echo "SEAM_API_URL and/or SWEEP_SECRET repo secrets are not set yet — skipping until deployment is configured."
+            exit 0
+          fi
+          status=$(curl -s -o /tmp/sweep_response.json -w "%{http_code}" \
+            -X POST "${{ secrets.SEAM_API_URL }}/internal/sweep" \
+            -H "x-sweep-secret: ${{ secrets.SWEEP_SECRET }}")
+          cat /tmp/sweep_response.json
+          echo
+          if [ "$status" -ge 400 ]; then
+            echo "Sweep returned HTTP $status"
+            exit 1
+          fi

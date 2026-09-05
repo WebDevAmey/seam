@@ -4,9 +4,15 @@ Every non-obvious choice, what it beat, and why. Ordered roughly by when each wa
 
 ---
 
-**Standalone repo, written from scratch.**
+**Standalone repo, written from scratch.** — *the landing page is a later, explicit exception; see the entry below.*
 *Alternative:* extend an existing codebase for a head start on auth, OAuth, and UI shell.
-*Why it lost:* that codebase belongs to something unrelated to this submission. Reusing its actual code and branding in a public hackathon repo isn't this project's call to make. Seam is its own repo, its own code, its own name — see `LEARNINGS.md` for the full account. The auth/shell/OAuth savings that reuse would have offered stayed as design guidance only; the actual hours in the build order reflect real, from-scratch work.
+*Why it lost (at the time):* that codebase belonged to something unrelated to this submission, and reusing its actual code and branding in a public hackathon repo wasn't this project's call to make on its own. Seam is its own repo, its own code, its own name — see `LEARNINGS.md` for the full account. The application itself — every backend pipeline stage, the agent fleet, auth, the dashboard — stayed real, from-scratch work, and still is.
+
+**The marketing landing page's structure and motion are adapted from Ovrt (`ovrt.in`, github.com/WebDevAmey/Ovrt) — the same team's other project — on explicit, later instruction.**
+*Alternative:* keep the landing page original, as the entry above originally committed to for the whole repo.
+*Why it changed:* an explicit instruction asked for the landing page specifically to match `ovrt.in`, reusing that repo's actual code — a deliberate, informed reversal of the entry above for this one surface, made after I flagged the tension (this repo's own submission narrative up to that point said "standalone, no Ovrt connection" in several places) and the user confirmed they meant the literal reuse, not just an adapted pattern.
+*What's actually reused vs. rewritten:* the component architecture, section rhythm, and motion (NavBar, hero, problem/solution contrast, feature cards, FAQ accordion, cinematic footer) come from Ovrt's real components, copied and adapted. Every word of copy was rewritten for what Seam actually does — none of Ovrt's product claims (WhatsApp support, Instagram DMs, a Monday-morning email digest) carried over, since they describe a different, unrelated product. Every real Ovrt product screenshot was left out entirely and replaced with small illustrated mockups of Seam's own real concepts (a leak-detected card, a Shield-pass badge, a ledger-verified badge) — using an actual screenshot of a different app as if it were Seam's own product preview would have been a factual misrepresentation independent of whether reusing the code was fine. The saffron accent that runs through Ovrt's entire palette is repointed to supermemory.ai's blue (`#0562EF`/`#0015FF`, the same real values grounding the dashboard's own palette) by changing the color *tokens* only — no component needed a code change for this, since Ovrt's CSS already separated color values from where they're used.
+*What this means for the "standalone" claim:* it no longer holds for the landing page specifically, and the docs say so plainly (`README.md`, `LEARNINGS.md`) rather than leaving the earlier, now-inaccurate claim standing. The rest of the submission — the actual product — is unaffected and remains genuinely from-scratch.
 
 **TypeScript + Hono, not Python + FastAPI.**
 *Alternative:* a separate Python service, keeping the trust boundary enforced by Pydantic.
@@ -48,17 +54,27 @@ Every non-obvious choice, what it beat, and why. Ordered roughly by when each wa
 *Alternative:* a real WhatsApp Business Cloud API integration, assumed reusable early in planning.
 *Why it lost:* that assumption depended on infrastructure this standalone build doesn't have access to (see `LEARNINGS.md`). Both channels are simulated behind an interface shaped so a real implementation is a one-file swap later, not a rearchitecture.
 
-**Seam's visual identity is an original "paper ledger" design, not an adopted brand.**
+**Seam's visual identity is an original "paper ledger" design, not an adopted brand.** — *superseded, see the v2 entry below.*
 *Alternative:* build a generic, safe SaaS-dashboard look, or adopt an existing design system wholesale.
-*Why it lost:* the ledger direction — hairline rules, rupee figures as the visual hero, tabular-nums wherever a number needs to line up — was this project's own original creative direction from the very first pass at its design, before that got set aside in an earlier plan to reuse someone else's shipped system. Reviving it is the honest choice: genuinely original, and it fits a product whose entire subject is a financial audit trail better than a borrowed identity would.
+*Why it lost (at the time):* the ledger direction — hairline rules, rupee figures as the visual hero, tabular-nums wherever a number needs to line up — was this project's own original creative direction from the very first pass at its design, before that got set aside in an earlier plan to reuse someone else's shipped system. Reviving it was the honest choice at the time: genuinely original, and it fit a product whose entire subject is a financial audit trail.
+
+**v2: a blue/white SaaS dashboard, palette and layout grounded in real reference sites, not the ledger concept above.**
+*Alternative:* keep the paper-ledger identity; invent a blue/white palette from scratch instead of pulling real values.
+*Why it changed:* a later, explicit instruction called for a full SaaS-dashboard redesign — supermemory.ai's colors, a causal-ai-style sidebar shell, medusajs-level polish, and real charts. The ledger identity above was a good answer to a different brief; this is the current one.
+*How it's grounded, not guessed:* the palette (`#0562ef` primary, light blue-tinted surfaces, `#07224f` navy) and type pairing (Space Grotesk headings, DM Sans body, DM Mono figures) were pulled from supermemory.ai's own shipped CSS bundle and font preloads (`curl`'d directly, not eyeballed from a screenshot — WebFetch only extracts text, not styling) — not invented and labeled "inspired by." The sidebar's grouped-nav structure is adapted from `causal-ai`'s actual `AppSidebar` component (a generic shadcn/ui sidebar pattern, not proprietary logic — same reuse posture as the auth pattern above), rebuilt with Seam's own nav items rather than copied wholesale. Recharts was picked because `causal-ai` already uses it (`components/ui/chart.tsx`), confirming it's the natural fit for this exact stack (React + Tailwind + Next.js Server Components) rather than a cold pick among Chart.js/Highcharts/Recharts.
+*Tradeoff:* the ledger identity's genuine distinctiveness is gone in favor of a look that will read as "competent SaaS dashboard," which is what was actually asked for.
 
 **The frontend only ever fetches server-to-server — no CORS setup on the API.**
 *Alternative:* add CORS middleware to `apps/api` so the browser can call it directly.
 *Why it lost:* every real data need in this build is satisfiable from a Next.js Server Component or Server Action, both of which run on the server, not in the browser. Deciding this once, up front, meant never having two different ways to reach the same data (a direct browser fetch vs. a server-side one) and never needing to reason about which endpoints are meant to be browser-reachable.
 
-**One hardcoded demo merchant, no login UI.**
-*Alternative:* build real session-based auth.
-*Why it lost:* real auth is real hours a time-boxed build doesn't need to spend to prove the actual claims this project is making. A single merchant's real, generated data is a stronger demo than a login screen guarding an empty one. Disclosed as a real limitation (`LIMITATIONS.md`, item 6) rather than presented as a finished multi-tenant boundary.
+**Auth is adapted from `causal-ai`'s real pattern, not built from a blank page — but split across two apps instead of living in one.**
+*Alternative:* build session auth from scratch, or put the whole thing (signing and verifying) inside `apps/web` the way `causal-ai` does, since that's simpler.
+*Why it lost:* `causal-ai`'s JWT-in-httpOnly-cookie pattern (`jose`, bcrypt, a fast middleware check) is solid, generic auth plumbing — reusable on its own technical merits, not proprietary business logic, so re-deriving it from nothing would just be redoing settled work. But `causal-ai` calls Prisma directly from the same Next.js process; Seam's `apps/web` never touches the database at all, by design (see the CORS-avoidance decision below). So signing and password-checking (real DB access) live in `apps/api` as `/auth/signup` and `/auth/login`; `apps/web`'s middleware only ever *verifies* a token, locally, with `jose`, using a secret shared between both apps — no round-trip per page load, same speed guarantee the original pattern has, just split along the boundary Seam already drew everywhere else.
+
+**No OTP email verification, no password reset.**
+*Alternative:* port `causal-ai`'s full OTP-verification and reset-password email flows too.
+*Why it lost:* both need a real email-sending credential (`causal-ai` uses Resend) that isn't configured for this project — the same category of gap already disclosed for OpenAI and WhatsApp. An account is active immediately after signup instead. Disclosed in `LIMITATIONS.md`, not silently dropped.
 
 **The generator's cart-amount range was widened from ₹300–5,000 to ₹50–5,000, and that change was made *before* re-running the eval that motivated it, not after seeing a better number.**
 *Alternative:* leave the original range and tune the EV floor or auto-approve threshold instead until the baseline comparison looked favorable.
