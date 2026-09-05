@@ -65,7 +65,9 @@ export default async function DigestPage() {
           <CardBody className="flex flex-col items-center gap-2">
             <HealthGauge rate={recoveryRate} />
             <p className="max-w-[180px] text-center text-[12px] text-muted">
-              Predicted recovery as a share of total leaked value this period.
+              {recoveryRate > 0
+                ? `Predicted recovery as a share of total leaked value this period.`
+                : `No actions dispatched yet. Run the recovery executor to see predicted recovery.`}
             </p>
           </CardBody>
         </Card>
@@ -75,10 +77,10 @@ export default async function DigestPage() {
             <p className="text-[13px] font-medium text-ink">Week over week</p>
           </CardHeader>
           <CardBody className="flex flex-col gap-3">
-            <WoWStat label="Leaked value" current={Number(digest.totalLeakAmountPaise)} prior={Number(prior.totalLeakAmountPaise)} invert />
+            <WoWStat label="Leaked value" current={Number(digest.totalLeakAmountPaise)} prior={Number(prior.totalLeakAmountPaise)} invert isCurrency />
             <WoWStat label="Leaks detected" current={digest.leaksDetected} prior={prior.leaksDetected} invert />
             <WoWStat label="Actions dispatched" current={digest.actionsDispatched} prior={prior.actionsDispatched} />
-            <WoWStat label="Recovered (EV)" current={Number(digest.netRecoveredPaise)} prior={Number(prior.netRecoveredPaise)} />
+            <WoWStat label="Recovered (EV)" current={Number(digest.netRecoveredPaise)} prior={Number(prior.netRecoveredPaise)} isCurrency />
           </CardBody>
         </Card>
       </div>
