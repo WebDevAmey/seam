@@ -69,12 +69,22 @@ export async function getCurrentMerchant(): Promise<{ id: string; name: string; 
   const token = cookieStore.get("auth-token")?.value;
   if (!token) return null;
 
-  const res = await fetch(`${API_BASE_URL}/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
-  return res.json() as Promise<{ id: string; name: string; email: string }>;
+  // A network-level failure here (the API cold-starting, a transient
+  // connection reset) is a real, expected possibility on a free-tier
+  // backend, not a bug — it has to degrade to "not logged in," the same
+  // as a bad token, rather than crashing the entire page. Every page
+  // under app/(app) calls this via requireCurrentMerchantId, so an
+  // unguarded throw here took down every authenticated page at once.
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as { id: string; name: string; email: string };
+  } catch {
+    return null;
+  }
 }
 
 // Pages under app/(app) are only ever reached with a valid session —
