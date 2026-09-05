@@ -11,6 +11,8 @@ function data(overrides: Partial<DigestData> = {}): DigestData {
     actionsDispatched: 0,
     actionsBlocked: 0,
     netRecoveredPaise: 0n,
+    potentialRecoveryPaise: 0n,
+    actionsReserved: 0,
     shieldBlockReasons: [],
     ...overrides,
   };

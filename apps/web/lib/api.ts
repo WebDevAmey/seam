@@ -45,7 +45,9 @@ export type LedgerEntry = {
   createdAt: string;
 };
 
-export type VerifyResult = { valid: true } | { valid: false; brokenAtSeq: string; reason: string };
+export type VerifyResult =
+  | { valid: true; totalEntries: number; merchantsAffected: number; firstSeq: string; lastSeq: string; elapsedMs: number }
+  | { valid: false; brokenAtSeq: string; reason: string; totalEntries: number; merchantsAffected: number; firstSeq: string; lastSeq: string; elapsedMs: number };
 
 export type MethodConcentrationFinding = {
   method: string;

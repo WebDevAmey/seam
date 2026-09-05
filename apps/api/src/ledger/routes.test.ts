@@ -34,7 +34,10 @@ describe("GET /ledger/verify", () => {
 
     const res = await ledgerRoutes.request("/ledger/verify");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ valid: true });
+    const body = (await res.json()) as { valid: boolean; totalEntries: number; merchantsAffected: number };
+    expect(body.valid).toBe(true);
+    expect(body.totalEntries).toBeGreaterThanOrEqual(1);
+    expect(body.merchantsAffected).toBeGreaterThanOrEqual(1);
   });
 
   it("returns 409 with a JSON body — proves the bigint seq serialises without crashing", async () => {
