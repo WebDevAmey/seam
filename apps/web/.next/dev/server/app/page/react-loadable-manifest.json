@@ -1,1 +1,9 @@
-{}
+{
+  "[project]/apps/web/components/landing/sections/CinematicFooter.tsx [app-client] (ecmascript, next/dynamic entry)": {
+    "id": "[project]/apps/web/components/landing/sections/CinematicFooter.tsx [app-client] (ecmascript, next/dynamic entry)",
+    "files": [
+      "static/chunks/06zz_gsap_0ivq115._.js",
+      "static/chunks/apps_web_components_landing_sections_CinematicFooter_tsx_1v_8iy8._.js"
+    ]
+  }
+}

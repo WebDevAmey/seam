@@ -1,5 +1,14 @@
 {
-  "/recovery/ledger/page": "app/recovery/ledger/page.js",
-  "/recovery/map/page": "app/recovery/map/page.js",
-  "/recovery/queue/page": "app/recovery/queue/page.js"
+  "/(app)/recovery/agents/[agentId]/page": "app/(app)/recovery/agents/[agentId]/page.js",
+  "/(app)/recovery/agents/page": "app/(app)/recovery/agents/page.js",
+  "/(app)/recovery/chat/page": "app/(app)/recovery/chat/page.js",
+  "/(app)/recovery/digest/page": "app/(app)/recovery/digest/page.js",
+  "/(app)/recovery/intelligence/page": "app/(app)/recovery/intelligence/page.js",
+  "/(app)/recovery/ledger/page": "app/(app)/recovery/ledger/page.js",
+  "/(app)/recovery/map/page": "app/(app)/recovery/map/page.js",
+  "/(app)/recovery/page": "app/(app)/recovery/page.js",
+  "/(app)/recovery/queue/page": "app/(app)/recovery/queue/page.js",
+  "/(app)/recovery/tickets/page": "app/(app)/recovery/tickets/page.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/page": "app/page.js"
 }

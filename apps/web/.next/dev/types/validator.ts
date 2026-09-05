@@ -36,6 +36,114 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
 }
 
 
+// Validate ../../../app/(app)/recovery/agents/[agentId]/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/recovery/agents/[agentId]">> = Specific
+  const handler = {} as typeof import("../../../app/(app)/recovery/agents/[agentId]/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/(app)/recovery/agents/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/recovery/agents">> = Specific
+  const handler = {} as typeof import("../../../app/(app)/recovery/agents/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/(app)/recovery/chat/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/recovery/chat">> = Specific
+  const handler = {} as typeof import("../../../app/(app)/recovery/chat/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/(app)/recovery/digest/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/recovery/digest">> = Specific
+  const handler = {} as typeof import("../../../app/(app)/recovery/digest/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/(app)/recovery/intelligence/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/recovery/intelligence">> = Specific
+  const handler = {} as typeof import("../../../app/(app)/recovery/intelligence/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/(app)/recovery/ledger/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/recovery/ledger">> = Specific
+  const handler = {} as typeof import("../../../app/(app)/recovery/ledger/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/(app)/recovery/map/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/recovery/map">> = Specific
+  const handler = {} as typeof import("../../../app/(app)/recovery/map/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/(app)/recovery/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/recovery">> = Specific
+  const handler = {} as typeof import("../../../app/(app)/recovery/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/(app)/recovery/queue/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/recovery/queue">> = Specific
+  const handler = {} as typeof import("../../../app/(app)/recovery/queue/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/(app)/recovery/tickets/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/recovery/tickets">> = Specific
+  const handler = {} as typeof import("../../../app/(app)/recovery/tickets/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/(auth)/login/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/login">> = Specific
+  const handler = {} as typeof import("../../../app/(auth)/login/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/(auth)/signup/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/signup">> = Specific
+  const handler = {} as typeof import("../../../app/(auth)/signup/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../app/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/">> = Specific
@@ -45,38 +153,29 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
   type __Unused = __Check
 }
 
-// Validate ../../../app/recovery/ledger/page.tsx
+
+
+
+
+
+
+// Validate ../../../app/(app)/layout.tsx
 {
-  type __IsExpected<Specific extends AppPageConfig<"/recovery/ledger">> = Specific
-  const handler = {} as typeof import("../../../app/recovery/ledger/page.js")
+  type __IsExpected<Specific extends LayoutConfig<"/">> = Specific
+  const handler = {} as typeof import("../../../app/(app)/layout.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
 }
 
-// Validate ../../../app/recovery/map/page.tsx
+// Validate ../../../app/(auth)/layout.tsx
 {
-  type __IsExpected<Specific extends AppPageConfig<"/recovery/map">> = Specific
-  const handler = {} as typeof import("../../../app/recovery/map/page.js")
+  type __IsExpected<Specific extends LayoutConfig<"/">> = Specific
+  const handler = {} as typeof import("../../../app/(auth)/layout.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
 }
-
-// Validate ../../../app/recovery/queue/page.tsx
-{
-  type __IsExpected<Specific extends AppPageConfig<"/recovery/queue">> = Specific
-  const handler = {} as typeof import("../../../app/recovery/queue/page.js")
-  type __Check = __IsExpected<typeof handler>
-  // @ts-ignore
-  type __Unused = __Check
-}
-
-
-
-
-
-
 
 // Validate ../../../app/layout.tsx
 {
