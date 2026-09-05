@@ -1,73 +1,365 @@
 @import "tailwindcss";
 
+/* Real-pointer hover for the landing page (adapted from ovrt.in): avoids
+   hover-on-tap false positives on touch devices. */
+@custom-variant fine-hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
 /*
- * Seam's design language: a ledger, because the subject is one — a paper
- * surface, hairline rules as the only structural device, rupee figures as
- * the visual hero at a scale nothing else on the page competes with.
- * Geist Mono carries every figure, hash and evidence id (tabular-nums,
- * character-level distinction is functional there); Geist Sans carries
- * everything else. Both are Vercel's own open fonts — not borrowed from
- * anyone's brand.
+ * Seam's design language — supermemory.ai-inspired dark theme.
+ * Dark canvas, electric blue accent, clean white text.
+ * Space Grotesk for headings, DM Sans for body, DM Mono for figures/hashes.
  */
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-heading);
+  --font-mono: var(--font-mono);
 
-  --color-paper: var(--paper);
+  --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-rule: var(--rule);
-  --color-accent: var(--accent);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-tint: var(--primary-tint);
   --color-at-risk: var(--at-risk);
   --color-recovered: var(--recovered);
+  --color-pending: var(--pending);
+
+  /* Standard shadcn semantic tokens, mapped onto the dashboard's own dark
+     palette above — every shadcn-registry component pulled into this app
+     (beUI, Vengeance UI, one-off copy-pastes) expects these names to exist.
+     Without them, arbitrary-opacity classes like `text-foreground/75`
+     silently resolve to nothing rather than erroring, so a missing token
+     here is invisible until you actually look at the rendered page. */
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--surface-raised);
+  --color-popover-foreground: var(--ink);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--surface-raised);
+  --color-secondary-foreground: var(--ink);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--primary-tint);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--at-risk);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--rule);
+  --color-input: var(--rule);
+  --color-ring: var(--primary);
+  --radius: 0.75rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
 :root {
-  --paper: #faf9f6;
-  --surface: #ffffff;
-  --ink: #15171c;
-  --muted: #6e7278;
-  --rule: #e3e2dd;
-  /* copper — thread pulled through a seam, warm without leaning on the
-     cliché cream+terracotta pairing (the paper here is closer to bone than
-     cream, and the accent sits toward copper rather than orange). */
-  --accent: #a15c2e;
-  --at-risk: #b3261e;
-  --recovered: #1b6e3c;
+  --bg: #050505;
+  --surface: #0c0c0c;
+  --surface-raised: #141414;
+  --ink: #f0f0f0;
+  --muted: #8a8a8a;
+  --rule: #1e1e1e;
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-tint: #1e293b;
+  --at-risk: #ef4444;
+  --recovered: #22c55e;
+  --pending: #f59e0b;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #131313;
-    --surface: #1a1a1a;
-    --ink: #f0efe9;
-    --muted: #9a9a94;
-    --rule: #2e2d29;
-    --accent: #d68a52;
-    --at-risk: #e5837a;
-    --recovered: #4fbf7e;
+    --bg: #050505;
+    --surface: #0c0c0c;
+    --surface-raised: #141414;
+    --ink: #f0f0f0;
+    --muted: #8a8a8a;
+    --rule: #1e1e1e;
+    --primary: #3b82f6;
+    --primary-hover: #60a5fa;
+    --primary-tint: #1e293b;
+    --at-risk: #ef4444;
+    --recovered: #22c55e;
+    --pending: #f59e0b;
   }
 }
 
 :root[data-theme="dark"] {
-  --paper: #131313;
-  --surface: #1a1a1a;
-  --ink: #f0efe9;
-  --muted: #9a9a94;
-  --rule: #2e2d29;
-  --accent: #d68a52;
-  --at-risk: #e5837a;
-  --recovered: #4fbf7e;
+  --bg: #050505;
+  --surface: #0c0c0c;
+  --surface-raised: #141414;
+  --ink: #f0f0f0;
+  --muted: #8a8a8a;
+  --rule: #1e1e1e;
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-tint: #1e293b;
+  --at-risk: #ef4444;
+  --recovered: #22c55e;
+  --pending: #f59e0b;
 }
 
 body {
-  background: var(--paper);
+  background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, .font-heading {
+  font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
 }
 
 .font-mono-figures {
   font-family: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
   font-variant-numeric: tabular-nums;
+}
+
+/* Landing page glow / gradient utilities */
+.landing-glow {
+  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(59, 130, 246, 0.15), transparent);
+}
+
+.landing-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.landing-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #f0f0f0 0%, #3b82f6 50%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.orb {
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.4), rgba(59, 130, 246, 0.1) 50%, transparent 70%);
+  filter: blur(40px);
+  animation: orb-breathe 4s ease-in-out infinite;
+}
+
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.08); opacity: 0.8; }
+}
+
+.fade-in {
+  animation: fade-in 0.6s ease-out both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: animate-in 0.5s ease-out both;
+}
+
+@keyframes animate-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/*
+ * ── Marketing landing page theme ──────────────────────────────────────────
+ * Structure and motion adapted from ovrt.in (github.com/WebDevAmey/Ovrt) —
+ * same team's other project, its layout/section rhythm reused deliberately
+ * (see DECISIONS.md). Token *names* are Ovrt's own; every accent value that
+ * was Ovrt's saffron orange is repointed to supermemory.ai's blue (grepped
+ * from its real shipped CSS, not guessed — see DECISIONS.md) per explicit
+ * instruction. Namespaced separately from the dashboard's own --bg/--ink/
+ * --primary tokens above so neither theme leaks into the other.
+ */
+@theme {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-dark: var(--bg-dark);
+  --color-bg-dark-soft: var(--bg-dark-soft);
+
+  --color-accent-saffron: var(--accent-saffron);
+  --color-accent-saffron-light: var(--accent-saffron-light);
+  --color-accent-saffron-glow: var(--accent-saffron-glow);
+  --color-accent-saffron-deep: var(--accent-saffron-deep);
+  --color-accent-saffron-on-dark: var(--accent-saffron-on-dark);
+  --color-accent-indigo: var(--accent-indigo);
+  --color-accent-indigo-light: var(--accent-indigo-light);
+  --color-accent-teal: var(--accent-teal);
+  --color-accent-teal-light: var(--accent-teal-light);
+  --color-accent-teal-deep: var(--accent-teal-deep);
+  --color-accent-gold: var(--accent-gold);
+  --color-accent-rose: var(--accent-rose);
+  --color-accent-rose-deep: var(--accent-rose-deep);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-light: var(--text-light);
+  --color-text-on-dark: var(--text-on-dark);
+  --color-text-on-dark-soft: var(--text-on-dark-soft);
+
+  --color-border-primary: var(--l-border);
+  --color-border-strong: var(--l-border-strong);
+  --color-border-dark: var(--l-border-dark);
+
+  --font-serif: var(--font-fraunces), Georgia, serif;
+  --ease-custom: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-cf-scroll: cf-scroll 22s linear infinite;
+  --animate-orbit: orbit 6s linear infinite;
+
+  @keyframes cf-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  @keyframes orbit {
+    to { transform: rotate(360deg); }
+  }
+}
+
+:root {
+  --bg-primary: #FAFAF8;
+  --bg-secondary: #F4F1EC;
+  --bg-dark: #0D0D0D;
+  --bg-dark-soft: #141414;
+
+  /* Ovrt's saffron accent, repointed to supermemory.ai's real blue values. */
+  --accent-saffron: #0562EF;
+  --accent-saffron-light: rgba(5, 98, 239, 0.12);
+  --accent-saffron-glow: rgba(5, 98, 239, 0.24);
+  --accent-saffron-deep: #0015FF;
+  --accent-saffron-on-dark: #6FA8F5;
+  --accent-indigo: #4B3FD8;
+  --accent-indigo-light: rgba(75, 63, 216, 0.1);
+  --accent-teal: #0D9B8A;
+  --accent-teal-light: rgba(13, 155, 138, 0.1);
+  --accent-teal-deep: #08655A;
+  --accent-gold: #D4A017;
+  --accent-rose: #C94B6E;
+  --accent-rose-deep: #AA405D;
+
+  --text-primary: #1A1A1A;
+  --text-secondary: #5C5C5C;
+  --text-light: #676767;
+  --text-on-dark: #F4F1EC;
+  --text-on-dark-soft: rgba(244, 241, 236, 0.65);
+
+  --l-border: rgba(0, 0, 0, 0.08);
+  --l-border-strong: rgba(0, 0, 0, 0.16);
+  --l-border-dark: rgba(244, 241, 236, 0.12);
+
+  --l-max: 1180px;
+  --l-radius: 10px;
+  --l-radius-lg: 20px;
+  --l-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --l-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --l-shadow: 0 16px 48px rgba(0, 0, 0, 0.1);
+  --l-shadow-lg: 0 32px 80px rgba(0, 0, 0, 0.14);
+}
+
+.landing-root {
+  color-scheme: light;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body), system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+.landing-root [id] { scroll-margin-top: 80px; }
+
+/* ── NavBar shell ── */
+.nav-outer-shell {
+  background: rgba(0, 0, 0, 0.025);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: background-color 280ms var(--l-ease), box-shadow 280ms var(--l-ease);
+}
+[data-nav].is-scrolled .nav-outer-shell {
+  background: rgba(0, 0, 0, 0.04);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.nav-shell {
+  background-color: color-mix(in srgb, var(--bg-primary) 72%, transparent);
+  border: 1px solid var(--border-primary);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(16px);
+  transition: background-color 280ms var(--l-ease), border-color 280ms var(--l-ease);
+}
+[data-nav].is-scrolled .nav-shell {
+  background-color: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  border-color: var(--border-strong);
+}
+.nav-mobile-overlay {
+  opacity: 0;
+  transition: opacity 280ms var(--l-ease);
+}
+.nav-mobile-overlay[data-open="true"] {
+  opacity: 1;
+  transition: opacity 320ms var(--l-ease);
+}
+.nav-mobile-item {
+  opacity: 0;
+  transform: translateY(18px);
+  filter: blur(4px);
+}
+.nav-mobile-overlay[data-open="true"] .nav-mobile-item {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  transition: opacity 420ms var(--l-ease), transform 420ms var(--l-ease), filter 360ms var(--l-ease);
+  transition-delay: calc(90ms + var(--i, 0) * 60ms);
+}
+
+/* ── Reveal-on-scroll ── */
+html.js .landing-root .reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 640ms var(--l-ease), transform 640ms var(--l-ease);
+  transition-delay: calc(var(--reveal-index, 0) * 60ms);
+}
+html.js .landing-root .reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Step cards (How it works) ── */
+.step {
+  padding: 26px 28px;
+  border: 1.5px solid var(--l-border);
+  border-radius: var(--l-radius);
+  background: #fff;
+  transition: background 240ms var(--l-ease), border-color 240ms var(--l-ease), transform 240ms var(--l-ease), box-shadow 240ms var(--l-ease);
+}
+.step.is-active {
+  border-color: var(--accent-saffron) !important;
+  background: color-mix(in srgb, var(--accent-saffron) 3%, transparent) !important;
+  transform: translateX(6px) !important;
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--accent-saffron) 10%, transparent) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-root .reveal,
+  .nav-mobile-overlay,
+  .nav-mobile-item,
+  .step {
+    transition: none !important;
+    transform: none !important;
+  }
 }
