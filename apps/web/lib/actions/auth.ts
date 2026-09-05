@@ -24,15 +24,24 @@ export async function signup(_prevState: AuthResult, formData: FormData): Promis
   const email = formData.get("email");
   const password = formData.get("password");
 
-  const res = await fetch(`${API_BASE_URL}/auth/signup`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password }),
-  });
-  const body = (await res.json()) as { token?: string; error?: string };
-
-  if (!res.ok || !body.token) {
-    return { error: body.error ?? "Something went wrong. Please try again." };
+  // A network-level failure (SEAM_API_URL misconfigured, the backend
+  // unreachable) has to come back as a real, visible form error, not an
+  // uncaught throw that crashes the whole page — redirect() below is
+  // deliberately outside this block so its own internal control-flow
+  // exception is never at risk of being swallowed here.
+  let body: { token?: string; error?: string };
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    });
+    body = (await res.json()) as { token?: string; error?: string };
+    if (!res.ok || !body.token) {
+      return { error: body.error ?? "Something went wrong. Please try again." };
+    }
+  } catch {
+    return { error: "Couldn't reach the server. Check your connection and try again." };
   }
 
   await setSessionCookie(body.token);
@@ -43,15 +52,19 @@ export async function login(_prevState: AuthResult, formData: FormData): Promise
   const email = formData.get("email");
   const password = formData.get("password");
 
-  const res = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  const body = (await res.json()) as { token?: string; error?: string };
-
-  if (!res.ok || !body.token) {
-    return { error: body.error ?? "Invalid email or password" };
+  let body: { token?: string; error?: string };
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    body = (await res.json()) as { token?: string; error?: string };
+    if (!res.ok || !body.token) {
+      return { error: body.error ?? "Invalid email or password" };
+    }
+  } catch {
+    return { error: "Couldn't reach the server. Check your connection and try again." };
   }
 
   await setSessionCookie(body.token);
