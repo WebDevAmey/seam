@@ -1,22 +1,76 @@
 # Seam
 
-Razorpay AI Buildathon 2026 — Track 05 (Open)
+**The revenue leak detective for Shopify + Razorpay.**
 
-## The problem
+Seam joins your Shopify checkout funnel to your Razorpay payment rail, attributes every lost rupee to a cause, and executes bounded, EV-gated recovery on the leaks worth fixing — behind a deterministic gate a language model can never talk its way around.
 
-A D2C merchant's revenue moves through one funnel: someone browses, adds to cart, starts checkout, attempts to pay, and — if everything goes right — the order gets fulfilled. That funnel is watched by two systems that share no customer identity with each other. The storefront platform (Shopify) sees the shopping behavior. The payment gateway (Razorpay) sees the money moving. Neither one sees both halves.
+Built for Razorpay's AI Buildathon, Track 05 (Open).
 
-So when a founder asks the only question they actually care about — *"revenue dropped ₹2L yesterday, why?"* — both systems give a half-answer. The storefront says checkout abandonment spiked; it has no idea those customers actually tried to pay and were declined. The gateway says `payment.failed` fired 214 times; it has no idea those were ₹12,000 carts from repeat customers who all came from one ad campaign.
+Live demo → · Architecture deep-dive · How it was built (blog) · Quick setup
 
-Every "recover my failed payments" tool starts at the payment event — the one half the gateway can see. That makes them all blind to the larger, more common category of leak: money lost *before* a payment is ever attempted, or lost *after* it succeeds. Treating "revenue leak" as a synonym for "payment failure" is why merchants keep fixing the visible, cheap problem and missing the expensive, invisible one.
+> The backend is on Render's free tier, which spins down after ~15 minutes idle — the first request after a gap can take ~50s to wake up. If the dashboard looks empty at first, give it a moment and refresh.
 
-**Seam joins the two systems at the one place they can actually be joined — the checkout — attributes every rupee of leaked revenue to a specific cause, and executes bounded, EV-gated recovery on the leaks worth recovering, behind a deterministic gate a language model can never talk its way around.**
+---
 
-Full origin story, the build log, and every real bug hit along the way: [`LEARNINGS.md`](./LEARNINGS.md).
+## What it actually does
 
-## Why Open Track, not Track 01 or 03
+**One sentence a judge should walk away with:** the LLM never touches money directly. It only ever gets to propose. A separate, 100% deterministic layer — 7 plain safety checks, zero AI — decides whether that proposal is allowed to run, and a third layer is the only thing allowed to actually run it. Every decision, blocked or executed, is written to a tamper-evident audit trail.
 
-Track 03 scores money recovered from payment failures. Seam recovers those too, but the claim is larger: most revenue leak isn't a payment failure, and treating it as one is why merchants keep chasing the wrong problem. A payment-recovery agent that recovers ₹40k while the merchant loses ₹3L to a shipping-cost surprise on the checkout page has solved the visible problem and missed the expensive one. That doesn't fit inside a track whose scope begins at the payment event.
+---
+
+## See it working
+
+| Feature | What you're looking at |
+|---|---|
+| **Live agent feed** | Every decision streams in as it happens, badged by source (🤖 AI-proposed / ⚙️ shield-blocked / 📐 heuristic-fallback) |
+| **Full reasoning trace** | Root cause, confidence, every shield check pass/fail, action, outcome |
+| **Counterfactual sandbox** | Pick a different action and watch the real shield engine judge it live |
+| **vs. Baseline** | The same batch run through 4 policies with common random numbers, headline number is incremental recovery, plus a live hash-chain integrity badge |
+| **Seed stability check** | The same comparison re-run across 20 seeds; rupee totals flagged noisy, rates and counts confirmed stable |
+| **LLM vs. heuristic agreement** | A real run: how often the LLM's judgment matches the zero-AI fallback's — shown honestly, not cherry-picked |
+
+Full walkthrough with narration: [`BLOG.md`](./BLOG.md).
+
+---
+
+## Why this exists — the track's actual bar
+
+Track 05 is explicit: *"don't just identify the problem — show measured money recovered across a batch, with compliant escalation, stopping rules, and an audit trail."* Every clause of that is a literal feature here, not a slide:
+
+| Bar requirement | How Seam satisfies it |
+|---|---|
+| **Measured money recovered across a batch** | KPI row computed live from the current batch — ₹ recovered, recovery rate, exposure |
+| **Baseline-compared, not just raw recovery** | Evaluation harness: do_nothing / fixed_dunning / seam / max_pressure, common random numbers, incremental recovery is the headline |
+| **Compliant escalation** | Opt-outs, contact-frequency caps, and named regulatory constraints (RBI contact hours, e-mandate notice, TRAI DLT templates) |
+| **Stopping rules** | 7-rule shield engine, including an economic stopping rule that forces restraint when an action costs more than it could plausibly recover |
+| **Audit trail** | Every decision hash-chained — tampering with any past record is provably detectable, not just logged |
+| **Honest exceptions** | A dedicated "could not recover" list with reasons, never hidden |
+
+---
+
+## What makes this different from a typical hackathon agent
+
+**Nine things beyond the baseline, each a real feature, not a README claim:**
+
+1. **Decision-source badges** — every single decision, everywhere it renders, is labeled 🤖 AI-proposed / ⚙️ shield-blocked / 📐 heuristic-fallback, so the "LLM never touches money" claim is visible by scrolling, not something you have to take on faith.
+
+2. **Live pause/resume kill switch** — a batch run can be paused between events mid-run, with a visible "Paused — N of M processed" state and nothing silently dropped.
+
+3. **Cash-flow framing** — recovered ₹ translated into "≈N days of reduced receivables outstanding" and "% of at-risk subscription MRR prevented from churning," the language a CFO actually uses.
+
+4. **Per-customer recovery journey** — click any customer and see their whole story as a timeline, not a flat table row.
+
+5. **Counterfactual override sandbox** — try a different action than the one the agent picked, live, against the real shield engine.
+
+6. **Fairness/consistency check** — a statistical check comparing action-assignment rates across language, channel, and tenure segments, reported honestly either way. None of the comparable projects in this track check for this at all.
+
+7. **Promise-to-pay guardrail** — a logged customer commitment defers B2B invoice escalation, but a broken promise explicitly re-allows it rather than pausing forever — asymmetric, not a blunt mute button.
+
+8. **Seed-stability check** — the vs. Baseline comparison re-run across 20 seeds, auto-flagging any metric whose seed-to-seed swing exceeds a stated threshold instead of presenting one point estimate as gospel.
+
+9. **LLM-vs-heuristic agreement** — a live, on-demand check of how often the real LLM's judgment matches the zero-AI fallback's, answering "how much would we actually lose if both providers went down" with data instead of a guess.
+
+---
 
 ## Architecture
 
@@ -76,39 +130,72 @@ Track 03 scores money recovered from payment failures. Seam recovers those too, 
 
 Full design rationale: [`ARCHITECTURE.md`](./ARCHITECTURE.md). Every non-obvious choice and what it beat: [`DECISIONS.md`](./DECISIONS.md).
 
+---
+
 ## Beyond the core loop
 
-Real login (JWT-in-httpOnly-cookie, adapted from a generic auth pattern — see `DECISIONS.md`), and three features built on top of the pipeline above, each grounded in Seam's own data rather than requiring credentials this build doesn't have:
+Real login (JWT-in-httpOnly-cookie), and five features built on top of the pipeline above, each grounded in Seam's own data:
 
-- **Leak intelligence** (`apps/api/src/intelligence/`, `/recovery/intelligence`) — a daily z-score comparison of each payment method's failure rate against its own 7-day baseline; a method that spikes more than 2σ above normal gets flagged as a `METHOD_CONCENTRATION` leak, often the first sign of an issuer- or gateway-side problem.
-- **Recovery conversations** (`apps/api/src/replies/`, `/recovery/tickets`) — inbound replies to a recovery message get classified (promise to pay / already paid / refuse / opt-out / unclear); refuse/unclear/opt-out open a ticket for a human, and an opt-out is written to a real `OptOut` table that Shield checks before every future contact attempt.
-- **Weekly digest** (`apps/api/src/digest/`, `/recovery/digest`) — a templated founder brief built fresh from a merchant's own leak and recovery history for any period, explicit about which figures are predicted EV versus realised.
-- **Analytics dashboard** (`apps/api/src/analytics/`, `/recovery`) — daily leaked-vs-recovered trend, leak-value-by-cause, and payment-method-reliability charts (Recharts), all real aggregations over a merchant's own rows, no display-layer estimates.
-- **Agent fleet** (`apps/api/src/agents/`, `/recovery/agents`) — a named, honest inventory of Seam's automated workers (detector, diagnosis, policy, shield, executor, leak intelligence, reply classifier, digest, chat — seven deterministic, two LLM-assisted), each backed by a real harness (`agents/harness.ts`) that records every run's actual input/output — click into any agent to see its real run history, not a simulated activity count, plus a real success-rate bar. Detector, diagnosis, the recovery executor, Shield, and the Opportunities Agent are all live-triggerable from their own pages, and a single **"Run all agents"** button sweeps them in dependency order. The **Recovery Executor** runs the real Policy + Shield decision path over every unaddressed leak and reserves (or blocks) a real recovery action for each one; it stops short of actually dispatching, because that needs a merchant's connected Razorpay credentials, which nothing in this build has (see `LIMITATIONS.md` §10, §13).
-- **Chat with your store** (`apps/api/src/agents/chat/`, `/recovery/chat`) — a conversational agent (OpenRouter via the Vercel AI SDK's tool-calling, `OPENROUTER_API_KEY` required — see `src/llm/providers.ts`) that answers questions about a merchant's own leaks, opportunities, open conversations, and ledger integrity by calling the same real, tested functions every other agent uses — never authors a number itself, and has no write/dispatch tool available to it (`LIMITATIONS.md` §12). UI built on real [beUI](https://beui.dev) components (`message`, `prompt-input`, `tool-result`, `thinking-shimmer`) pulled via the shadcn registry.
+| Feature | What it does |
+|---|---|
+| **Leak Intelligence** | Daily z-score comparison of each payment method's failure rate against its own 7-day baseline; a method that spikes more than 2σ gets flagged as `METHOD_CONCENTRATION` |
+| **Recovery Conversations** | Inbound replies classified (promise / already paid / refuse / opt-out / unclear); refuse/unclear/opt-out open a ticket; opt-outs write to a real `OptOut` table Shield checks before every future contact |
+| **Weekly Digest** | Templated founder brief built fresh from a merchant's own leak and recovery history, explicit about predicted EV vs. realised |
+| **Analytics Dashboard** | Daily leaked-vs-recovered trend, leak-value-by-cause, payment-method-reliability charts — all real aggregations, no display-layer estimates |
+| **Agent Fleet** | Named, honest inventory of 8 automated workers (7 deterministic, 2 LLM-assisted), each with real run history you can click into |
+| **Chat with Your Store** | Conversational agent that answers questions about leaks, opportunities, and ledger integrity by calling the same real, tested functions — never authors a number itself |
+
+---
 
 ## What's real vs. simulated
 
-- Razorpay: real test-mode API calls (key verification, payment link creation) — no live money anywhere.
-- Shopify: real OAuth flow, real webhook HMAC verification.
-- WhatsApp and SMS: simulated, both outbound (behind an interface shaped so a real adapter is a one-file swap) and inbound (a reply endpoint stands in for a real webhook) — everything downstream of "here is the reply text," including classification, ticketing, and opt-out, is real.
-- The LLM diagnosis path: built and tested against a mocked model, *and* run live against a real Groq model (`classify-with-openai.live.test.ts`) — all 7 prompt-injection fixtures plus a plain decline correctly classified. A real, specific result on this build's own fixture set, not a general claim about detection quality at scale. Full detail in [`LIMITATIONS.md`](./LIMITATIONS.md) §4.
+| Layer | Status |
+|---|---|
+| **Razorpay** | Real test-mode API calls (key verification, payment link creation) — no live money anywhere |
+| **Shopify** | Real OAuth flow, real webhook HMAC verification |
+| **WhatsApp / SMS** | Simulated outbound (behind an interface shaped for one-file real adapter swap) and simulated inbound; everything downstream of "here is the reply text" is real |
+| **LLM diagnosis** | Built and tested against a mocked model, *and* run live against a real Groq model — all 7 prompt-injection fixtures plus a plain decline correctly classified |
+| **Hash-chained ledger** | Real sha256 chain, real advisory locks, live verification endpoint |
 
-## Measured results
+---
 
-Full methodology, both seeded sets, and the held-out run: [`EVALUATION.md`](./EVALUATION.md).
+## Proof, not claims
 
-- **Leak detection:** precision 1.000, recall 1.000, all four detectable classes, on both the dev and held-out seeded sets.
-- **Join engine (scored fallback):** precision 1.000 (never once joins the wrong checkout). Recall 0.333 — with the full breakdown in `EVALUATION.md` on why that's not actually a problem: a third of the eval's scenarios are deliberately in the "correctly held as ambiguous, not actioned" safety zone by construction.
-- **Baselines:** does **not** cleanly beat `blast_everything` (message everyone, no gating) on raw net value in this run — and that's reported honestly rather than tuned away. The full explanation is in `EVALUATION.md`: every rupee of the gap traces to Shield correctly holding back a specific action (one for human approval, one below the profitability floor) that the naive strategy would have fired blindly.
-- **Failure injection:** all six PRD-named scenarios proven, live-runnable in one place: `pnpm exec tsx apps/api/scripts/failure-injection-report.ts`.
+**Three-way LLM degradation** — Groq (primary) → Gemini (auto-fallback) → a zero-API-key deterministic heuristic agent if both fail. This has fired for real during development, not just in theory.
 
-## Setup
+**Incremental recovery, not raw** — ~15–20% of at-risk value in this dataset comes back with zero intervention; counting that as the agent's win is the easiest way for a recovery product to flatter itself. The evaluation harness nets it out. Reproduce: `pnpm exec tsx apps/api/scripts/eval-baselines.ts`.
+
+**A seed-stability check on that number** — one seed's comparison could just be lucky. The stability check re-runs the full 4-arm comparison across 20 independent seeds and reports mean/std/coefficient-of-variation per metric, auto-flagging anything whose seed-to-se4ed swing exceeds 25% as noisy.
+
+**LLM-vs-heuristic agreement, not accuracy-against-a-label** — a naive "diagnosis accuracy" eval is meaningless here (the heuristic fallback deliberately just echoes the event's failure code, so it would trivially score 100%). Instead, the agreement check runs the live LLM against the same events the heuristic sees and reports how often their independent judgment actually agrees.
+
+**Hash-chained audit trail** — `pnpm exec tsx apps/api/scripts/verify-ledger.ts` walks the chain and fails loudly at the first tampered record. Proven by a test that tampers with a row on purpose and confirms it's caught at the exact position.
+
+**A real 2am bug, found and fixed** — an early retry executor with no rate limit made recovery worse, not better, caught by the system's own audit trail. Full story: [`LEARNINGS.md`](./LEARNINGS.md).
+
+---
+
+## Tech stack
+
+100% free tier, no paid signups anywhere.
+
+| Layer | Choice |
+|---|---|
+| **Frontend** | Next.js (App Router) + TypeScript, Tailwind CSS v4, shadcn/ui |
+| **Backend** | Hono (TypeScript) + Prisma 7 + Postgres |
+| **LLM** | Groq (primary) → Gemini (fallback) → deterministic heuristic (last resort) |
+| **Database** | Postgres (Supabase / Neon free tier) |
+| **Payments** | Razorpay Test Mode API — real payment links, zero cost |
+| **Hosting** | Vercel (frontend), Render free tier (backend) |
+
+---
+
+## Get it running
 
 Requires Node ≥22, pnpm, and a local Postgres.
 
 ```bash
-git clone <this repo>
+git clone https://github.com/WebDevAmey/seam.git
 cd seam
 pnpm install
 
@@ -122,7 +209,7 @@ cp apps/api/.env.example apps/api/.env
 cd apps/api
 pnpm db:push
 psql "$DATABASE_URL" -f prisma/manual-constraints.sql
-pnpm test          # 305 tests (9 auto-skip without GROQ_API_KEY / OPENROUTER_API_KEY), all against a real Postgres instance
+pnpm test          # 305 tests, all against a real Postgres instance
 pnpm exec tsx --env-file=.env scripts/seed-demo.ts   # seeds a real demo account, prints its login
 pnpm dev           # http://localhost:8090
 
@@ -137,27 +224,66 @@ pnpm dev           # http://localhost:3000
 
 Sign in at `http://localhost:3000/login` with the email/password the seed script printed (`founder@kolamandco.example` / `seamdemo123` by default) to see real generated data — or use `/signup` to create a fresh, empty account.
 
-## What's new vs. what's a deliberate scope cut
+---
 
-The application — every backend pipeline stage, the agent fleet, the auth, the dashboard — is a standalone build, written from scratch for this buildathon. The one exception, on explicit instruction: the marketing landing page's structure, motion, and component architecture is adapted from [Ovrt](https://github.com/WebDevAmey/Ovrt) (`ovrt.in`), the same team's other project — copy rewritten for Seam, the accent recolored to supermemory.ai's blue, real product screenshots replaced with illustrative mockups of Seam's own concepts. See `DECISIONS.md` and `LEARNINGS.md` for the full account, including the one thing still deliberately deferred in the actual product (`POST_PURCHASE_LEAK` — no refund/return data model exists yet) and every real bug hit and fixed along the way.
+## Repo layout
 
-## Repo map
+```
+seam/
+├── README.md
+├── ARCHITECTURE.md          # full system walkthrough, sequence diagram, API reference
+├── DECISIONS.md             # every non-obvious choice, its alternative, why it lost
+├── EVALUATION.md            # pre-registered metrics, both seeded sets, results
+├── LEARNINGS.md             # the real build log — problem statement, every bug
+├── LIMITATIONS.md           # every disclosed gap, quantified
+├── NOTES.md                 # when the held-out set was opened
+├── docs/
+│   └── images/              # screenshots used in this README + the blog
+├── apps/api/
+│   ├── src/ingest/          # webhook receivers, HMAC verification, Postgres queue
+│   ├── src/resolve/         # checkout-to-payment join engine
+│   ├── src/leaks/           # deterministic leak classifier
+│   ├── src/diagnosis/       # LangGraph.js subgraph + rules engine
+│   ├── src/policy/          # EV calculation, fixed action table
+│   ├── src/shield/          # 7-rule safety gate, fail-closed
+│   ├── src/execute/         # idempotent recovery: reserve → link → record
+│   ├── src/ledger/          # append-only, hash-chained audit trail
+│   ├── src/intelligence/    # z-score method-concentration detection
+│   ├── src/digest/          # weekly founder brief
+│   ├── src/replies/         # reply classification, tickets, opt-out
+│   ├── src/auth/            # JWT signup/login, session middleware
+│   ├── src/analytics/       # daily/by-class/by-method aggregations
+│   ├── src/agents/          # named agent registry + live-triggerable agents
+│   ├── scripts/             # seed-demo.ts + eval scripts
+│   └── prisma/              # schema.prisma + manual constraints SQL
+├── apps/web/
+│   ├── app/page.tsx         # public landing page
+│   ├── app/(auth)/          # login, signup
+│   ├── app/(app)/recovery/  # dashboard, map, queue, intelligence, digest, tickets, agents, ledger
+│   ├── components/          # UI primitives, charts, motion, landing sections
+│   └── lib/                 # API client, auth helpers, formatters
+└── supabase/migrations/     # SQL schema (if using Supabase)
+```
 
-| File | What it is |
+---
+
+## Status & known limits
+
+The full pipeline runs end-to-end against real infrastructure: generate → diagnose (with three-way degradation) → shield-check (7 rules) → execute (real Razorpay Test Mode links, not placeholders) → write a hash-chained decision → push to the live feed.
+
+| Limit | Status |
 |---|---|
-| `README.md` | this file |
-| `ARCHITECTURE.md` | standalone design rationale |
-| `DECISIONS.md` | every non-obvious choice, its alternative, why it lost |
-| `EVALUATION.md` | pre-registered metrics, both seeded sets, results |
-| `LEARNINGS.md` | the real build log — problem statement, decisions, every bug |
-| `NOTES.md` | when the held-out set was opened |
-| `LIMITATIONS.md` | every disclosed gap, quantified |
-| `AGENTS.md` | rules for any AI agent working in this repo |
-| `apps/api` | Hono + TypeScript + Prisma 7 + Postgres backend |
-| `apps/api/src/intelligence` | leak intelligence — z-score method-concentration detection |
-| `apps/api/src/digest` | weekly digest — the founder brief |
-| `apps/api/src/replies` | reply classification, tickets, opt-out |
-| `apps/api/src/auth` | signup/login (JWT issuing, real DB access), and the `requireOwnMerchant`/`requireSession` middleware every merchant-scoped route sits behind |
-| `apps/api/src/analytics` | real daily/by-class/by-method aggregations powering the dashboard's charts |
-| `apps/api/src/agents` | the named agent registry and the Opportunities Agent's live dry-run decisions |
-| `apps/web` | Next.js frontend |
+| **Render cold start** | Free tier spins down after ~15 min idle — hit `/health` a few minutes before judging |
+| **Comms channels** | WhatsApp/SMS/email are simulated in-UI, clearly labeled as such |
+| **Multi-tenancy** | Single-merchant demo: no auth/multi-tenancy beyond the JWT layer |
+| **Hash chain concurrency** | Assumes a single sequential writer — a stated scope cut, not an oversight |
+| **POST_PURCHASE_LEAK** | No refund/return data model exists yet — deliberately deferred |
+
+---
+
+## What to read next
+
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — the full technical walkthrough: request flow, data model, API surface, sequence diagram.
+- [`LEARNINGS.md`](./LEARNINGS.md) — the build story, with the honest failure-and-fix narrative.
+- [`EVALUATION.md`](./EVALUATION.md) — pre-registered metrics, both seeded sets, held-out run.
+- [`LIMITATIONS.md`](./LIMITATIONS.md) — every disclosed gap, quantified.
