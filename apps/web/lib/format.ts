@@ -21,3 +21,19 @@ const LEAK_CLASS_LABELS: Record<string, string> = {
 export function leakClassLabel(leakClass: string): string {
   return LEAK_CLASS_LABELS[leakClass] ?? leakClass;
 }
+
+const METHOD_LABELS: Record<string, string> = {
+  upi: "UPI",
+  card: "Card",
+  netbanking: "Netbanking",
+  wallet: "Wallet",
+  emi: "EMI",
+};
+
+export function methodLabel(method: string): string {
+  return METHOD_LABELS[method] ?? method;
+}
+
+export function shortDate(isoDate: string): string {
+  return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
