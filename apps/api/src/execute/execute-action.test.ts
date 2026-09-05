@@ -39,7 +39,6 @@ function baseInput(overrides: Partial<ExecuteInput> = {}): ExecuteInput {
     razorpayKeySecret: "rzp_test_secret",
     adapter: new SimulatedSmsAdapter(),
     shieldContext: {
-      optedOut: false,
       now: new Date("2026-09-04T12:00:00Z"), // clear of quiet hours
       contactsInLast7Days: 0,
       merchantContactsToday: 0,
@@ -80,10 +79,10 @@ describe("executeAction — Shield blocks before any reservation or dispatch hap
     const merchant = await seedMerchant();
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
+    const customerPhone = "+919876543210"; // matches baseInput()'s default customerPhone
+    await prisma.optOut.create({ data: { merchantId: merchant.id, phone: customerPhone } });
 
-    const result = await executeAction(
-      baseInput({ merchantId: merchant.id, shieldContext: { ...baseInput().shieldContext, optedOut: true } }),
-    );
+    const result = await executeAction(baseInput({ merchantId: merchant.id, customerPhone }));
 
     expect(result.outcome).toBe("blocked");
     expect(fetchMock).not.toHaveBeenCalled();

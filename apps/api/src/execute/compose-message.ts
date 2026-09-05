@@ -9,7 +9,7 @@
  */
 const PHRASING: Record<"DELAYED_RETRY_LINK" | "ALTERNATE_METHOD_LINK" | "SAME_METHOD_LINK", string> = {
   DELAYED_RETRY_LINK:
-    "Hi! We noticed your recent order didn't go through. You can complete it whenever you're ready — here's a link:",
+    "Hi! We noticed your recent order didn't go through. You can complete it whenever you're ready. Here's a link:",
   ALTERNATE_METHOD_LINK:
     "Hi! Your payment method didn't work for this order. You can try a different method here:",
   SAME_METHOD_LINK: "Hi! Your order needs one more step to complete. Continue here:",

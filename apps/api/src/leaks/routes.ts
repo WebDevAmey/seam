@@ -1,10 +1,11 @@
 import { Hono } from "hono";
+import { requireOwnMerchant, type AuthEnv } from "../auth/middleware.js";
 import { prisma } from "../prisma.js";
 
-export const leakRoutes = new Hono();
+export const leakRoutes = new Hono<AuthEnv>();
 
-leakRoutes.get("/merchants/:id/leaks", async (c) => {
-  const merchantId = c.req.param("id");
+leakRoutes.get("/merchants/:id/leaks", requireOwnMerchant, async (c) => {
+  const merchantId = c.get("merchantId");
   const leaks = await prisma.leak.findMany({
     where: { merchantId },
     orderBy: { detectedAt: "desc" },

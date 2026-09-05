@@ -42,7 +42,7 @@ function runChecks(input: ShieldInput): ShieldVerdict {
     return { verdict: "BLOCK", reason: "customer has opted out / is on the DND list" };
   }
   if (isQuietHoursIST(input.now)) {
-    return { verdict: "BLOCK", reason: "quiet hours (21:00-09:00 IST) — deferred, never sent" };
+    return { verdict: "BLOCK", reason: "quiet hours (21:00-09:00 IST), deferred, never sent" };
   }
   if (input.contactsInLast7Days >= MAX_CONTACTS_PER_7_DAYS) {
     return {
@@ -78,6 +78,6 @@ export function evaluateShield(input: ShieldInput): ShieldVerdict {
   try {
     return runChecks(input);
   } catch {
-    return { verdict: "BLOCK", reason: "Shield check threw — failing closed" };
+    return { verdict: "BLOCK", reason: "Shield check threw, failing closed" };
   }
 }

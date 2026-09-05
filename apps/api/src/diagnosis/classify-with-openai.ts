@@ -1,11 +1,42 @@
-import { openai } from "@ai-sdk/openai";
-import { generateObject } from "ai";
+import { generateObject, jsonSchema } from "ai";
+import { diagnosisModel } from "../llm/providers.js";
 import type { ClassifyInput } from "./graph.js";
-import { diagnosisOutputSchema, type DiagnosisOutput } from "./schema.js";
+import { DIAGNOSIS_CLASSES, diagnosisOutputSchema, type DiagnosisOutput } from "./schema.js";
 
 /**
- * NOT exercised against a live model in this codebase — there's no
- * OPENAI_API_KEY configured for this project. Everything downstream (the
+ * `generateObject`'s default path (`schema: diagnosisOutputSchema`, a zod
+ * schema) auto-converts zod → JSON Schema, and that conversion leaks a
+ * zod-v4-internal `~standard` key into the schema sent to Groq's strict
+ * `response_format: json_schema` mode — Groq's own schema validator then
+ * rejects it, and the confused model sometimes echoes schema-shaped keys
+ * (`$schema`, `properties`, `required`) back inside its own answer object.
+ * Hand-writing the JSON Schema here (via `jsonSchema()`, which skips the
+ * zod conversion entirely) sidesteps that bug; `diagnosisOutputSchema` still
+ * does the real runtime validation via the `validate` callback below, so
+ * the actual data contract hasn't loosened, only how it reaches Groq.
+ */
+const diagnosisJsonSchema = jsonSchema<DiagnosisOutput>(
+  {
+    type: "object",
+    properties: {
+      diagnosisClass: { type: "string", enum: [...DIAGNOSIS_CLASSES] },
+      reasoning: { type: "string" },
+      evidenceEventIds: { type: "array", items: { type: "string" } },
+    },
+    required: ["diagnosisClass", "reasoning", "evidenceEventIds"],
+    additionalProperties: false,
+  },
+  {
+    validate: (value) => {
+      const result = diagnosisOutputSchema.safeParse(value);
+      return result.success ? { success: true, value: result.data } : { success: false, error: result.error };
+    },
+  },
+);
+
+/**
+ * Runs against Groq (src/llm/providers.ts) — fast enough to stay well
+ * inside the 4s per-round timeout below. Everything downstream (the
  * schema, the retry/fail-safe graph, the content/evidence validator) is
  * built and tested against a mocked ClassifyFn; this is the one real
  * integration point that needs actual credentials to prove end to end.
@@ -41,8 +72,8 @@ function buildPrompt(input: ClassifyInput): string {
 
 export async function classifyWithOpenAI(input: ClassifyInput): Promise<DiagnosisOutput> {
   const { object } = await generateObject({
-    model: openai("gpt-4o-mini"),
-    schema: diagnosisOutputSchema,
+    model: diagnosisModel(),
+    schema: diagnosisJsonSchema,
     system: SYSTEM_PROMPT,
     prompt: buildPrompt(input),
     abortSignal: AbortSignal.timeout(4000), // PRD §8: 4s timeout per round

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import { requireOwnMerchant, type AuthEnv } from "../auth/middleware.js";
 import { requireEnv } from "../env.js";
 import { encrypt } from "../lib/crypto.js";
 import { prisma } from "../prisma.js";
@@ -25,7 +26,7 @@ const connectRazorpaySchema = z.object({
   webhookSecret: z.string().min(1),
 });
 
-export const merchantRoutes = new Hono();
+export const merchantRoutes = new Hono<AuthEnv>();
 
 merchantRoutes.post("/merchants", async (c) => {
   const body = createMerchantSchema.parse(await c.req.json());
@@ -35,8 +36,8 @@ merchantRoutes.post("/merchants", async (c) => {
 
 // Not OAuth — see razorpay-client.ts for why. The merchant pastes their Test
 // Mode Key ID + Key Secret; we prove they're real before ever storing them.
-merchantRoutes.post("/merchants/:id/razorpay/connect", async (c) => {
-  const merchantId = c.req.param("id");
+merchantRoutes.post("/merchants/:id/razorpay/connect", requireOwnMerchant, async (c) => {
+  const merchantId = c.get("merchantId");
   const body = connectRazorpaySchema.parse(await c.req.json());
 
   const isValid = await verifyRazorpayCredentials(body.keyId, body.keySecret);

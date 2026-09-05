@@ -4,6 +4,7 @@ import { composeMessage, phrasingFor } from "./compose-message.js";
 import { createPaymentLink } from "./razorpay-payment-link.js";
 import { reserveAction } from "./reserve-action.js";
 import { appendLedgerEntry } from "../ledger/append.js";
+import { isOptedOut } from "../replies/is-opted-out.js";
 import { evaluateShield } from "../shield/evaluate.js";
 
 export type DispatchableActionClass = "DELAYED_RETRY_LINK" | "ALTERNATE_METHOD_LINK" | "SAME_METHOD_LINK";
@@ -21,8 +22,12 @@ export type ExecuteInput = {
   razorpayKeyId: string;
   razorpayKeySecret: string;
   adapter: ChannelAdapter;
+  // Deliberately no `optedOut` field here — the executor looks that up
+  // itself (below), against the real OptOut table, rather than trusting a
+  // caller-supplied boolean that could be stale or simply forgotten. A
+  // customer's own "STOP" reply (src/replies/handle-reply.ts) is what
+  // populates that table, and this is what makes it actually bind.
   shieldContext: {
-    optedOut: boolean;
     now: Date;
     contactsInLast7Days: number;
     merchantContactsToday: number;
@@ -64,8 +69,9 @@ export async function executeAction(input: ExecuteInput): Promise<ExecuteOutcome
   }
 
   const phrasing = phrasingFor(input.actionClass);
+  const optedOut = await isOptedOut(input.merchantId, input.customerPhone);
   const verdict = evaluateShield({
-    optedOut: input.shieldContext.optedOut,
+    optedOut,
     now: input.shieldContext.now,
     contactsInLast7Days: input.shieldContext.contactsInLast7Days,
     amountPaise: input.amountPaise,

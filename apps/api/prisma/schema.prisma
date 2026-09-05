@@ -17,10 +17,14 @@ enum ConnectionStatus {
 // account. Deliberately minimal — no auth/org/RBAC beyond what a 30-hour
 // demo needs; see DECISIONS.md.
 model Merchant {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  // nullable: a merchant created by an internal script (seed-demo.ts, the
+  // eval scripts) has no login of its own — only ones that signed up
+  // through the real auth flow do.
+  passwordHash String?
+  createdAt    DateTime @default(now())
 
   shopify  ShopifyConnection?
   razorpay RazorpayConnection?
@@ -193,4 +197,73 @@ model Outcome {
   recoveredPaise    BigInt
   attributedAt      DateTime
   attributionMethod String
+}
+
+// Recovery-conversation handling (PRD §8's reply classification, made
+// real): a customer's reply to a recovery message gets classified, and
+// anything needing a human — REFUSE, or anything the classifier can't
+// place — becomes a ticket. PROMISE/DONE are positive signals that don't
+// need one.
+model Ticket {
+  id               String   @id @default(cuid())
+  merchantId       String
+  recoveryActionId String
+  replyText        String
+  replyClass       String // 'PROMISE' | 'DONE' | 'REFUSE' | 'OPTOUT' | 'UNCLEAR'
+  status           String   @default("OPEN") // 'OPEN' | 'RESOLVED'
+  createdAt        DateTime @default(now())
+}
+
+// An OPTOUT reply writes here, and Shield's check 1 (absolute, no
+// override) reads from here — this is what makes "the customer said stop"
+// actually stop future contact, not just get logged.
+model OptOut {
+  id         String   @id @default(cuid())
+  merchantId String
+  phone      String
+  createdAt  DateTime @default(now())
+
+  @@unique([merchantId, phone])
+}
+
+// The agent harness: every agent invocation — deterministic or
+// LLM-assisted — writes one row here. This is what lets a founder click
+// into any agent on /recovery/agents and see exactly what it actually did
+// on a given run, not just trust the registry's description string.
+model AgentRun {
+  id         String   @id @default(cuid())
+  merchantId String
+  agentId    String // matches AGENT_REGISTRY's id, e.g. "opportunities"
+  status     String // 'ok' | 'error'
+  summary    String // one-line human-readable result, for the run-list view
+  input      Json
+  output     Json?
+  error      String?
+  durationMs Int
+  startedAt  DateTime @default(now())
+
+  @@index([merchantId, agentId, startedAt])
+}
+
+// "Chat with your store" — one thread per conversation; messages keep the
+// full history (including which tools got called) so a multi-turn
+// conversation can be replayed, not just the latest exchange.
+model ChatThread {
+  id         String   @id @default(cuid())
+  merchantId String
+  title      String?
+  createdAt  DateTime @default(now())
+
+  @@index([merchantId, createdAt])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  threadId  String
+  role      String // 'user' | 'assistant' | 'tool'
+  content   String
+  toolCalls Json?
+  createdAt DateTime @default(now())
+
+  @@index([threadId, createdAt])
 }
