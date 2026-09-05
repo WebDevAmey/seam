@@ -65,6 +65,8 @@ export type Digest = {
   actionsDispatched: number;
   actionsBlocked: number;
   netRecoveredPaise: string;
+  potentialRecoveryPaise: string;
+  actionsReserved: number;
   shieldBlockReasons: { reason: string; count: number }[];
   narrative: string;
 };

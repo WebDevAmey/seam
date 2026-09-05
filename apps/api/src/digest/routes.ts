@@ -26,6 +26,7 @@ digestRoutes.get("/merchants/:id/digest", requireOwnMerchant, async (c) => {
         ...digest,
         totalLeakAmountPaise: digest.totalLeakAmountPaise.toString(),
         netRecoveredPaise: digest.netRecoveredPaise.toString(),
+        potentialRecoveryPaise: digest.potentialRecoveryPaise.toString(),
         leaksByClass: digest.leaksByClass.map((l) => ({ ...l, amountPaise: l.amountPaise.toString() })),
       };
       return { output: serialized, summary: `${digest.leaksDetected} leaks, ${digest.actionsDispatched} dispatched` };

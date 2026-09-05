@@ -22,7 +22,9 @@ export default async function DigestPage() {
 
   const totalLeaked = Number(digest.totalLeakAmountPaise);
   const netRecovered = Number(digest.netRecoveredPaise);
+  const potentialRecovery = Number(digest.potentialRecoveryPaise);
   const recoveryRate = totalLeaked > 0 ? (netRecovered / totalLeaked) * 100 : 0;
+  const potentialRate = totalLeaked > 0 ? (potentialRecovery / totalLeaked) * 100 : 0;
 
   const topLeakClass = [...digest.leaksByClass].sort((a, b) => Number(b.amountPaise) - Number(a.amountPaise))[0];
   const topBlockReason = [...digest.shieldBlockReasons].sort((a, b) => b.count - a.count)[0];
@@ -35,7 +37,13 @@ export default async function DigestPage() {
       `${digest.actionsDispatched} recovery message${digest.actionsDispatched === 1 ? "" : "s"} sent, ${formatPaise(digest.netRecoveredPaise)} predicted back`,
     );
   }
-  if (recoveryRate > 0) wins.push(`${recoveryRate.toFixed(0)}% of leaked value is being recovered`);
+  if (digest.actionsReserved > 0) {
+    wins.push(
+      `${digest.actionsReserved} action${digest.actionsReserved === 1 ? "" : "s"} reserved with ${formatPaise(digest.potentialRecoveryPaise)} potential recovery`,
+    );
+  }
+  if (recoveryRate > 0) wins.push(`${recoveryRate.toFixed(0)}% of leaked value recovered`);
+  else if (potentialRate > 0) wins.push(`${potentialRate.toFixed(0)}% potential recovery from reserved actions`);
   if (digest.leaksDetected === 0) wins.push("No leaks detected this period");
   if (wins.length === 0) wins.push("Nothing to report yet this period");
 
@@ -63,11 +71,13 @@ export default async function DigestPage() {
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[auto_1fr]">
         <Card>
           <CardBody className="flex flex-col items-center gap-2">
-            <HealthGauge rate={recoveryRate} />
+            <HealthGauge rate={recoveryRate > 0 ? recoveryRate : potentialRate} />
             <p className="max-w-[180px] text-center text-[12px] text-muted">
               {recoveryRate > 0
-                ? `Predicted recovery as a share of total leaked value this period.`
-                : `No actions dispatched yet. Run the recovery executor to see predicted recovery.`}
+                ? `Actual recovery rate from dispatched actions.`
+                : potentialRate > 0
+                  ? `Potential recovery rate from ${digest.actionsReserved} reserved action${digest.actionsReserved === 1 ? "" : "s"} awaiting approval.`
+                  : `No actions dispatched yet. Run the recovery executor to see predicted recovery.`}
             </p>
           </CardBody>
         </Card>
@@ -79,8 +89,9 @@ export default async function DigestPage() {
           <CardBody className="flex flex-col gap-3">
             <WoWStat label="Leaked value" current={Number(digest.totalLeakAmountPaise)} prior={Number(prior.totalLeakAmountPaise)} invert isCurrency />
             <WoWStat label="Leaks detected" current={digest.leaksDetected} prior={prior.leaksDetected} invert />
-            <WoWStat label="Actions dispatched" current={digest.actionsDispatched} prior={prior.actionsDispatched} />
-            <WoWStat label="Recovered (EV)" current={Number(digest.netRecoveredPaise)} prior={Number(prior.netRecoveredPaise)} isCurrency />
+            <WoWStat label="Reserved" current={digest.actionsReserved} prior={prior.actionsReserved} />
+            <WoWStat label="Dispatched" current={digest.actionsDispatched} prior={prior.actionsDispatched} />
+            <WoWStat label="Potential recovery" current={Number(digest.potentialRecoveryPaise)} prior={Number(prior.potentialRecoveryPaise)} isCurrency />
           </CardBody>
         </Card>
       </div>

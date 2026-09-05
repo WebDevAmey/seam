@@ -26,6 +26,7 @@ export async function generateDigest(
   }
 
   const dispatched = actions.filter((a) => a.state === "DISPATCHED");
+  const reserved = actions.filter((a) => a.state === "RESERVED");
   const blocked = actions.filter((a) => a.shieldVerdict === "BLOCK");
 
   const reasonCounts = new Map<string, number>();
@@ -43,6 +44,8 @@ export async function generateDigest(
     actionsDispatched: dispatched.length,
     actionsBlocked: blocked.length,
     netRecoveredPaise: dispatched.reduce((sum, a) => sum + a.evPaise, 0n),
+    potentialRecoveryPaise: reserved.reduce((sum, a) => sum + a.evPaise, 0n),
+    actionsReserved: reserved.length,
     shieldBlockReasons: Array.from(reasonCounts.entries()).map(([reason, count]) => ({ reason, count })),
   };
 

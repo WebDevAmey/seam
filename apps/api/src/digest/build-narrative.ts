@@ -9,6 +9,10 @@ export type DigestData = {
   /** EV of dispatched actions — predicted, not observed. See LIMITATIONS.md
    * §2: there's no outcome worker, so this is never claimed as realised. */
   netRecoveredPaise: bigint;
+  /** EV of reserved (not yet dispatched) actions — potential recovery awaiting merchant approval. */
+  potentialRecoveryPaise: bigint;
+  /** Number of actions reserved but not yet dispatched. */
+  actionsReserved: number;
   shieldBlockReasons: { reason: string; count: number }[];
 };
 
@@ -54,6 +58,12 @@ export function buildDigestNarrative(data: DigestData): string {
   if (data.actionsDispatched > 0) {
     sentences.push(
       `${data.actionsDispatched} recovery message${data.actionsDispatched === 1 ? "" : "s"} went out, a predicted ${formatPaise(data.netRecoveredPaise)} recovered.`,
+    );
+  }
+
+  if (data.actionsReserved > 0) {
+    sentences.push(
+      `${data.actionsReserved} action${data.actionsReserved === 1 ? "" : "s"} reserved awaiting approval, with ${formatPaise(data.potentialRecoveryPaise)} in potential recovery.`,
     );
   }
 
